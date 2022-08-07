@@ -28,9 +28,7 @@ const useHome = () => {
       if ((code > 64 && code < 91) || code === 32) {
         setTypedWord((prev) => [...prev, name]);
       } else if (code == 8) {
-        setTypedWord((prev) => {
-          return prev.slice(0, prev.length - 1);
-        });
+        setTypedWord((prev) => prev.slice(0, prev.length - 1));
       }
     };
 
