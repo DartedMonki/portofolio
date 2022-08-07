@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import MuiLink, { LinkProps as MuiLinkProps } from '@mui/material/Link';
 import { styled } from '@mui/material/styles';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import NextLink, { LinkProps as NextLinkProps } from 'next/link';
 import { useRouter } from 'next/router';
 
@@ -11,7 +11,10 @@ const Anchor = styled('a')({});
 
 interface NextLinkComposedProps
   extends Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'href'>,
-    Omit<NextLinkProps, 'href' | 'as' | 'onClick' | 'onMouseEnter'> {
+    Omit<
+      NextLinkProps,
+      'href' | 'as' | 'onClick' | 'onMouseEnter' | 'onTouchStart'
+    > {
   to: NextLinkProps['href'];
   linkAs?: NextLinkProps['as'];
 }
