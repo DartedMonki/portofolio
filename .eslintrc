@@ -10,11 +10,16 @@
   "plugins": [
     "@typescript-eslint",
     "unused-imports",
-    "import"
+    "import",
+    "react"
   ],
   "rules": {
+    "no-console": "error",
     "@typescript-eslint/no-unused-vars": "off",
     "unused-imports/no-unused-imports": "error",
+    "react/self-closing-comp": "error",
+    "no-template-curly-in-string": "error",
+    "react/jsx-curly-brace-presence": ["error", { "props": "never"}],
     "unused-imports/no-unused-vars": [
       "warn",
       {
