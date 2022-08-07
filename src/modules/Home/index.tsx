@@ -31,7 +31,9 @@ const Home = ({ ipAddress }: HomeProps) => {
         }}
         ref={data.objRef}
       >
-        {data.typedWord.length > 0 ? `You: ${data.typedWord.join('')}` : ''}
+        {data.typedWord.length > 0
+          ? `${data?.homeLocale?.you}${data.typedWord.join('')}`
+          : ''}
       </Box>
       <Box
         sx={{
@@ -79,7 +81,7 @@ const Home = ({ ipAddress }: HomeProps) => {
                 color: 'white',
               }}
             >
-              Who am I?
+              {data?.aboutLocale?.avatar}
             </Typography>
           </Box>
           <Image
@@ -95,15 +97,13 @@ const Home = ({ ipAddress }: HomeProps) => {
       </Box>
       <FabMenu />
       <Dialog open={data.openAboutDialog} onClose={methods.handleAboutDialog}>
-        <DialogTitle>About me</DialogTitle>
+        <DialogTitle>{data?.aboutLocale?.title}</DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ color: 'black' }}>
-            I&apos;m a Software Engineer with {YEARS_OF_EXPERIENCE} years of
-            experience. I&apos;m experienced in using web development frameworks
-            and libraries such as React.js, Next.js, Vue.js, and Laravel.
-            I&apos;ve also created a simple platformer game using Unity.
-            I&apos;m a bachelor of Computer Science from IPB University.
-            I&apos;m very interested in web programming and game development.
+            {data?.aboutLocale?.content?.replace(
+              '{years}',
+              YEARS_OF_EXPERIENCE || '',
+            )}
           </DialogContentText>
         </DialogContent>
       </Dialog>

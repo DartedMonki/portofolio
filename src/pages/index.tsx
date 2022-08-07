@@ -8,7 +8,9 @@ import Home from '~/modules/Home';
 
 const Index: NextPage = ({
   ipAddress,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) => <Home ipAddress={ipAddress} />;
+}: InferGetServerSidePropsType<typeof getServerSideProps>) => (
+  <Home ipAddress={ipAddress} />
+);
 
 export default Index;
 

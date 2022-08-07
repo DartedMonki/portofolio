@@ -2,6 +2,10 @@ import { MutableRefObject, useEffect, useRef, useState } from 'react';
 
 import { useSnackbar } from 'notistack';
 
+import about from '~/src/locale/about';
+import alert from '~/src/locale/alert';
+import home from '~/src/locale/home';
+import useLocale from '~/src/locale/useLocale';
 import { isEmpty } from '~/utils/lang';
 
 import { HomeProps } from '.';
@@ -12,6 +16,9 @@ const useHome = ({ ipAddress }: HomeProps) => {
   const objRef = useRef(null) as unknown as MutableRefObject<HTMLDivElement>;
 
   const { enqueueSnackbar } = useSnackbar();
+  const alertLocale = useLocale(alert);
+  const aboutLocale = useLocale(about);
+  const homeLocale = useLocale(home);
 
   const handleAboutDialog = () => {
     setOpenAboutDialog((prev) => !prev);
@@ -38,7 +45,7 @@ const useHome = ({ ipAddress }: HomeProps) => {
       } else if (name === 'Enter') {
         setTypedWord([]);
         enqueueSnackbar(
-          `Your message with IP address: ${ipAddress} has been recorded.`,
+          alertLocale?.mouseMessage?.replace('{ipAddress}', ipAddress),
           {
             variant: 'success',
             autoHideDuration: 2500,
@@ -53,10 +60,10 @@ const useHome = ({ ipAddress }: HomeProps) => {
       document.removeEventListener('mousemove', handleMoveObjectOnMouseMove);
       document.removeEventListener('keydown', handleUserType);
     };
-  }, [enqueueSnackbar, ipAddress]);
+  }, [alertLocale?.mouseMessage, enqueueSnackbar, ipAddress]);
 
   return {
-    data: { objRef, openAboutDialog, typedWord },
+    data: { aboutLocale, homeLocale, objRef, openAboutDialog, typedWord },
     methods: { handleAboutDialog },
   };
 };
