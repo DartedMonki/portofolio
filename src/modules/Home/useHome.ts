@@ -1,11 +1,17 @@
 import { MutableRefObject, useEffect, useRef, useState } from 'react';
 
+import { useSnackbar } from 'notistack';
+
 import { isEmpty } from '~/utils/lang';
 
-const useHome = () => {
+import { HomeProps } from '.';
+
+const useHome = ({ ipAddress }: HomeProps) => {
   const [openAboutDialog, setOpenAboutDialog] = useState(false);
   const [typedWord, setTypedWord] = useState<string[]>([]);
   const objRef = useRef(null) as unknown as MutableRefObject<HTMLDivElement>;
+
+  const { enqueueSnackbar } = useSnackbar();
 
   const handleAboutDialog = () => {
     setOpenAboutDialog((prev) => !prev);
@@ -29,6 +35,15 @@ const useHome = () => {
         setTypedWord((prev) => [...prev, name]);
       } else if (code == 8) {
         setTypedWord((prev) => prev.slice(0, prev.length - 1));
+      } else if (name === 'Enter') {
+        setTypedWord([]);
+        enqueueSnackbar(
+          `Your message with IP address: ${ipAddress} has been recorded.`,
+          {
+            variant: 'success',
+            autoHideDuration: 2500,
+          },
+        );
       }
     };
 
@@ -38,7 +53,7 @@ const useHome = () => {
       document.removeEventListener('mousemove', handleMoveObjectOnMouseMove);
       document.removeEventListener('keydown', handleUserType);
     };
-  }, []);
+  }, [enqueueSnackbar, ipAddress]);
 
   return {
     data: { objRef, openAboutDialog, typedWord },

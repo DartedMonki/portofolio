@@ -15,8 +15,12 @@ import { YEARS_OF_EXPERIENCE } from '~/constants/global';
 
 import useHome from './useHome';
 
-const Home = () => {
-  const { data, methods } = useHome();
+export interface HomeProps {
+  ipAddress: string;
+}
+
+const Home = ({ ipAddress }: HomeProps) => {
+  const { data, methods } = useHome({ ipAddress });
 
   return (
     <Container maxWidth="lg">
