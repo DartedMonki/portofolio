@@ -6,6 +6,7 @@ import about from '~/src/locale/about';
 import alert from '~/src/locale/alert';
 import home from '~/src/locale/home';
 import useLocale from '~/src/locale/useLocale';
+import { mapTypedWordToUrl } from '~/src/utils/generateUrl';
 import { isEmpty } from '~/utils/lang';
 
 import { HomeProps } from '.';
@@ -43,6 +44,12 @@ const useHome = ({ ipAddress }: HomeProps) => {
       } else if (code == 8) {
         setTypedWord((prev) => prev.slice(0, prev.length - 1));
       } else if (name === 'Enter') {
+        const url = mapTypedWordToUrl?.[typedWord.join('')];
+        if (url) {
+          window.open(url, '_blank')?.focus();
+          setTypedWord([]);
+          return;
+        }
         setTypedWord([]);
         enqueueSnackbar(
           alertLocale?.mouseMessage?.replace('{ipAddress}', ipAddress),
@@ -60,7 +67,7 @@ const useHome = ({ ipAddress }: HomeProps) => {
       document.removeEventListener('mousemove', handleMoveObjectOnMouseMove);
       document.removeEventListener('keydown', handleUserType);
     };
-  }, [alertLocale?.mouseMessage, enqueueSnackbar, ipAddress]);
+  }, [alertLocale?.mouseMessage, enqueueSnackbar, ipAddress, typedWord]);
 
   return {
     data: { aboutLocale, homeLocale, objRef, openAboutDialog, typedWord },

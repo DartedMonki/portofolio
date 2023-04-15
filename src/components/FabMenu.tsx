@@ -5,6 +5,8 @@ import {
 import { Fab } from '@mui/material';
 import { useRouter } from 'next/router';
 
+import { GITHUB_URL, LINKEDIN_URL } from '../constants/constant';
+
 const FabMenu = () => {
   const { asPath, locale, pathname, push, query } = useRouter();
 
@@ -46,7 +48,7 @@ const FabMenu = () => {
           },
         }}
         aria-label="linkedIn"
-        href="https://www.linkedin.com/in/daniafriyadi/"
+        href={LINKEDIN_URL}
         target="_blank"
         rel="noreferrer noopener"
       >
@@ -66,7 +68,7 @@ const FabMenu = () => {
           },
         }}
         aria-label="github"
-        href="https://github.com/DartedMonki"
+        href={GITHUB_URL}
         target="_blank"
         rel="noreferrer noopener"
       >
