@@ -1,5 +1,11 @@
 import { red } from '@mui/material/colors';
 import { createTheme } from '@mui/material/styles';
+import { Didact_Gothic } from 'next/font/google';
+
+const didactGothic = Didact_Gothic({
+  weight: ['400'],
+  subsets: ['latin'],
+});
 
 // Create a theme instance.
 const theme = createTheme({
@@ -15,7 +21,7 @@ const theme = createTheme({
     },
   },
   typography: {
-    fontFamily: ["'Didact Gothic'", 'sans-serif'].join(', '),
+    fontFamily: didactGothic.style.fontFamily,
   },
 });
 
