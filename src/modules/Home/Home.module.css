@@ -1,0 +1,26 @@
+@media (min-width: 768px) {
+  .swiper {
+    width: 640px;
+    height: 360px;
+  }
+}
+@media (max-width: 767px) {
+  .swiper {
+    width: 256px;
+    height: 144px;
+  }
+}
+
+.swiper :global(.swiper-slide) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  font-size: 22px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.swiper :global(.swiper-slide:nth-child(1n))  {
+  box-shadow: 12px 18px 34px -16px rgba(66, 68, 90, 1);
+}

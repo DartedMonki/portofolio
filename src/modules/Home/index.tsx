@@ -1,6 +1,5 @@
 import {
   Button,
-  Container,
   Dialog,
   DialogContent,
   DialogContentText,
@@ -12,6 +11,7 @@ import Image from 'next/image';
 
 import FabMenu from '~/components/FabMenu';
 
+import PortfolioSection from './portofolio-section';
 import useHome from './useHome';
 
 export interface HomeProps {
@@ -22,7 +22,7 @@ const Home = ({ ipAddress }: HomeProps) => {
   const { data, methods } = useHome({ ipAddress });
 
   return (
-    <Container maxWidth="lg">
+    <>
       <Box
         sx={{
           position: 'absolute',
@@ -106,7 +106,8 @@ const Home = ({ ipAddress }: HomeProps) => {
           </DialogContentText>
         </DialogContent>
       </Dialog>
-    </Container>
+      <PortfolioSection />
+    </>
   );
 };
 

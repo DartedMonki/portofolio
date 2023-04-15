@@ -21,7 +21,8 @@
     "next": "latest",
     "notistack": "^2.0.5",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "swiper": "^9.2.2"
   },
   "devDependencies": {
     "@types/node": "latest",
