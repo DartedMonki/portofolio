@@ -27,6 +27,9 @@ const Home = ({ ipAddress }: HomeProps) => {
         sx={{
           position: 'absolute',
           display: 'none',
+          color: 'red',
+          zIndex: 99,
+          whiteSpace: 'nowrap',
         }}
         ref={data.objRef}
       >
@@ -90,7 +93,7 @@ const Home = ({ ipAddress }: HomeProps) => {
             alt="github-avatar"
           />
         </Button>
-        <Typography variant="h4" component="h1" gutterBottom>
+        <Typography variant="h4" component="h1" color="white" gutterBottom>
           afriyadi y. r.
         </Typography>
       </Box>
