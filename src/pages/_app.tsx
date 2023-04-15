@@ -39,7 +39,7 @@ export default function MyApp(props: MyAppProps) {
       `}</style>
       <CacheProvider value={emotionCache}>
         <Head>
-          <title>Portofolio</title>
+          <title>DartedMonki</title>
           <meta name="viewport" content="initial-scale=1, width=device-width" />
           <link rel="shortcut icon" href="/images/favicon.ico" />
           <link
