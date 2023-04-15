@@ -11,7 +11,6 @@ import Typography from '@mui/material/Typography';
 import Image from 'next/image';
 
 import FabMenu from '~/components/FabMenu';
-import { YEARS_OF_EXPERIENCE } from '~/constants/global';
 
 import useHome from './useHome';
 
@@ -102,7 +101,7 @@ const Home = ({ ipAddress }: HomeProps) => {
           <DialogContentText sx={{ color: 'black' }}>
             {data?.aboutLocale?.content?.replace(
               '{years}',
-              YEARS_OF_EXPERIENCE || '',
+              data.yearsOfExperience || '',
             )}
           </DialogContentText>
         </DialogContent>

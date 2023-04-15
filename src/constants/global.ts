@@ -1,1 +1,0 @@
-export const YEARS_OF_EXPERIENCE = process.env.NEXT_PUBLIC_YEARS_OF_EXPERIENCE;

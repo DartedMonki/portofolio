@@ -1,5 +1,6 @@
-import { MutableRefObject, useEffect, useRef, useState } from 'react';
+import { MutableRefObject, useEffect, useMemo, useRef, useState } from 'react';
 
+import dayjs from 'dayjs';
 import { useSnackbar } from 'notistack';
 
 import about from '~/src/locale/about';
@@ -24,6 +25,11 @@ const useHome = ({ ipAddress }: HomeProps) => {
   const handleAboutDialog = () => {
     setOpenAboutDialog((prev) => !prev);
   };
+
+  const yearsOfExperience = useMemo(() => {
+    const startWorkDate = dayjs('2020-11-09');
+    return dayjs().diff(startWorkDate, 'year', true).toFixed(1);
+  }, []);
 
   useEffect(() => {
     const element = objRef.current;
@@ -70,7 +76,14 @@ const useHome = ({ ipAddress }: HomeProps) => {
   }, [alertLocale?.mouseMessage, enqueueSnackbar, ipAddress, typedWord]);
 
   return {
-    data: { aboutLocale, homeLocale, objRef, openAboutDialog, typedWord },
+    data: {
+      aboutLocale,
+      homeLocale,
+      objRef,
+      openAboutDialog,
+      typedWord,
+      yearsOfExperience,
+    },
     methods: { handleAboutDialog },
   };
 };
