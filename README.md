@@ -1,3 +1,4 @@
 # portofolio
 
-pnpm version 7.9.0
+npm version 8.19.3
+node version v18.13.0
