@@ -7,11 +7,17 @@ import {
 } from '@mui/material';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
 import FabMenu from '~/components/FabMenu';
 
-import PortfolioSection from './portofolio-section';
+const DynamicScrollToTop = dynamic(
+  () => import('~/src/components/ScrollToTop'),
+  { ssr: false },
+);
+
+import PortfolioSection from './portfolio-section';
 import useHome from './useHome';
 
 export interface HomeProps {
@@ -23,6 +29,26 @@ const Home = ({ ipAddress }: HomeProps) => {
 
   return (
     <>
+      <Dialog
+        PaperProps={{
+          sx: {
+            borderRadius: '20px',
+          },
+        }}
+        open={data.openAboutDialog}
+        onClose={methods.handleAboutDialog}
+      >
+        <DialogTitle>{data?.aboutLocale?.title}</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ color: 'black' }}>
+            {data?.aboutLocale?.content?.replace(
+              '{years}',
+              data.yearsOfExperience || '',
+            )}
+          </DialogContentText>
+        </DialogContent>
+      </Dialog>
+      <DynamicScrollToTop />
       <Box
         sx={{
           position: 'absolute',
@@ -98,17 +124,6 @@ const Home = ({ ipAddress }: HomeProps) => {
         </Typography>
       </Box>
       <FabMenu />
-      <Dialog open={data.openAboutDialog} onClose={methods.handleAboutDialog}>
-        <DialogTitle>{data?.aboutLocale?.title}</DialogTitle>
-        <DialogContent>
-          <DialogContentText sx={{ color: 'black' }}>
-            {data?.aboutLocale?.content?.replace(
-              '{years}',
-              data.yearsOfExperience || '',
-            )}
-          </DialogContentText>
-        </DialogContent>
-      </Dialog>
       <PortfolioSection />
     </>
   );
