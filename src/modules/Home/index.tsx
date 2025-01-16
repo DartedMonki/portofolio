@@ -1,10 +1,4 @@
-import {
-  Button,
-  Dialog,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-} from '@mui/material';
+import { Button, Dialog, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import dynamic from 'next/dynamic';
@@ -12,13 +6,10 @@ import Image from 'next/image';
 
 import FabMenu from '~/components/FabMenu';
 
-const DynamicScrollToTop = dynamic(
-  () => import('~/src/components/ScrollToTop'),
-  { ssr: false },
-);
-
 import PortfolioSection from './portfolio-section';
 import useHome from './useHome';
+
+const DynamicScrollToTop = dynamic(() => import('~/src/components/ScrollToTop'), { ssr: false });
 
 export interface HomeProps {
   ipAddress: string;
@@ -37,14 +28,13 @@ const Home = ({ ipAddress }: HomeProps) => {
         }}
         open={data.openAboutDialog}
         onClose={methods.handleAboutDialog}
+        aria-labelledby="about-dialog-title"
+        aria-describedby="about-dialog-description"
       >
-        <DialogTitle>{data?.aboutLocale?.title}</DialogTitle>
+        <DialogTitle id="about-dialog-title">{data?.aboutLocale?.title}</DialogTitle>
         <DialogContent>
-          <DialogContentText sx={{ color: 'black' }}>
-            {data?.aboutLocale?.content?.replace(
-              '{years}',
-              data.yearsOfExperience || '',
-            )}
+          <DialogContentText id="about-dialog-description" sx={{ color: 'black' }}>
+            {data?.aboutLocale?.content?.replace('{years}', data.yearsOfExperience || '')}
           </DialogContentText>
         </DialogContent>
       </Dialog>
@@ -59,9 +49,7 @@ const Home = ({ ipAddress }: HomeProps) => {
         }}
         ref={data.objRef}
       >
-        {data.typedWord.length > 0
-          ? `${data?.homeLocale?.you}${data.typedWord.join('')}`
-          : ''}
+        {data.typedWord.length > 0 ? `${data?.homeLocale?.you}${data.typedWord.join('')}` : ''}
       </Box>
       <Box
         sx={{

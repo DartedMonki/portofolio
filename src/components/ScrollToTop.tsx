@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
-
 import { KeyboardArrowUp } from '@mui/icons-material';
 import { Box, Fab, useScrollTrigger, Zoom } from '@mui/material';
+import { useCallback, useEffect, useState } from 'react';
 
 const ScrollTop = () => {
   const useScrollTriggerRes = useScrollTrigger({

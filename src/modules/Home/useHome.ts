@@ -1,7 +1,6 @@
-import { MutableRefObject, useEffect, useMemo, useRef, useState } from 'react';
-
 import dayjs from 'dayjs';
 import { useSnackbar } from 'notistack';
+import { MutableRefObject, useEffect, useMemo, useRef, useState } from 'react';
 
 import about from '~/src/locale/about';
 import alert from '~/src/locale/alert';
@@ -57,13 +56,10 @@ const useHome = ({ ipAddress }: HomeProps) => {
           return;
         }
         setTypedWord([]);
-        enqueueSnackbar(
-          alertLocale?.mouseMessage?.replace('{ipAddress}', ipAddress),
-          {
-            variant: 'success',
-            autoHideDuration: 2500,
-          },
-        );
+        enqueueSnackbar(alertLocale?.mouseMessage?.replace('{ipAddress}', ipAddress), {
+          variant: 'success',
+          autoHideDuration: 2500,
+        });
       }
     };
 

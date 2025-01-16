@@ -1,24 +1,28 @@
-import * as React from 'react';
-
 import { ButtonUnstyledProps } from '@mui/base/ButtonUnstyled';
 import useButton from '@mui/base/useButton';
 import { Link } from '@mui/material';
 import { styled } from '@mui/system';
 import { clsx } from 'clsx';
 import { Didact_Gothic } from 'next/font/google';
+import * as React from 'react';
 
 const didactGothic = Didact_Gothic({
   weight: ['400'],
   subsets: ['latin'],
 });
 
+interface BlackBorderButtonLinkProps extends ButtonUnstyledProps {
+  invert?: boolean;
+  href?: string;
+}
+
 const BlackBorderButtonLink = React.forwardRef(function BlackBorderButtonLink(
-  props: ButtonUnstyledProps,
-  ref: React.ForwardedRef<any>,
+  props: BlackBorderButtonLinkProps,
+  ref: React.ForwardedRef<any>
 ) {
-  const { children, href } = props;
+  const { children, href, invert = false, ...otherProps } = props;
   const { active, disabled, focusVisible, getRootProps } = useButton({
-    ...props,
+    ...otherProps,
     ref,
   });
 
@@ -26,15 +30,11 @@ const BlackBorderButtonLink = React.forwardRef(function BlackBorderButtonLink(
     active,
     disabled,
     focusVisible,
+    invert,
   };
 
   return (
-    <Link
-      href={href}
-      underline="none"
-      target="_blank"
-      rel="noreferrer noopener"
-    >
+    <Link href={href} underline="none" target="_blank" rel="noreferrer noopener">
       <BlackBorderButtonLinkRoot {...getRootProps()} className={clsx(classes)}>
         <span className="buttonChild">{children}</span>
       </BlackBorderButtonLinkRoot>
@@ -42,9 +42,8 @@ const BlackBorderButtonLink = React.forwardRef(function BlackBorderButtonLink(
   );
 });
 
-export default BlackBorderButtonLink;
-
 const black = '#000000';
+const white = '#ffffff';
 
 const BlackBorderButtonLinkRoot = styled('button')`
   font-family: ${didactGothic.style.fontFamily};
@@ -53,17 +52,17 @@ const BlackBorderButtonLinkRoot = styled('button')`
   font-weight: bold;
   border: none;
   border-radius: 0.75em;
-  background: ${black};
+  background: ${(props) => (props.className?.includes('invert') ? white : black)};
   padding: 0;
 
   & .buttonChild {
     display: flex;
     box-sizing: border-box;
-    border: 2px solid ${black};
+    border: 2px solid ${(props) => (props.className?.includes('invert') ? white : black)};
     border-radius: 0.75em;
     padding: 0.75em 1.5em;
-    background-color: #ffffff;
-    color: ${black};
+    background-color: ${(props) => (props.className?.includes('invert') ? black : white)};
+    color: ${(props) => (props.className?.includes('invert') ? white : black)};
     transform: translateY(-0.2em);
     transition: transform 0.1s ease;
   }
@@ -83,3 +82,5 @@ const BlackBorderButtonLinkRoot = styled('button')`
     cursor: not-allowed;
   }
 `;
+
+export default BlackBorderButtonLink;
