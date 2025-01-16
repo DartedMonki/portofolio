@@ -1,9 +1,11 @@
+import CloseIcon from '@mui/icons-material/Close';
 import {
   Box,
   Button,
   Dialog,
   DialogContent,
   DialogTitle,
+  IconButton,
   Paper,
   Typography,
   useMediaQuery,
@@ -24,27 +26,58 @@ const DynamicScrollToTop = dynamic(() => import('~/src/components/ScrollToTop'),
 });
 
 const AboutDialogContent = memo(
-  ({ contentParagraphs, title }: { contentParagraphs: string[]; title: string }) => (
+  ({
+    contentParagraphs,
+    title,
+    onClose,
+  }: {
+    contentParagraphs: string[];
+    title: string;
+    onClose: () => void;
+  }) => (
     <Paper
       elevation={0}
       sx={{
         p: { xs: 2, sm: 4 },
         backgroundColor: 'background.paper',
         overflow: 'auto',
+        position: 'relative',
       }}
     >
-      <DialogTitle
-        id="about-dialog-title"
+      <Box
         sx={{
-          p: 0,
-          mb: 3,
-          fontSize: { xs: '1.75rem', sm: '2rem' },
-          fontWeight: 600,
-          color: 'text.primary',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          mb: 2,
         }}
       >
-        {title}
-      </DialogTitle>
+        <DialogTitle
+          id="about-dialog-title"
+          sx={{
+            p: 0,
+            fontSize: { xs: '1.75rem', sm: '2rem' },
+            fontWeight: 600,
+            color: 'text.primary',
+          }}
+        >
+          {title}
+        </DialogTitle>
+        <IconButton
+          aria-label="close dialog"
+          onClick={onClose}
+          sx={{
+            color: 'text.secondary',
+            p: 1,
+            '&:hover': {
+              color: 'text.primary',
+              bgcolor: 'action.hover',
+            },
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </Box>
       <DialogContent
         sx={{
           p: 0,
@@ -139,6 +172,7 @@ const Home = ({ ipAddress }: HomeProps) => {
         <AboutDialogContent
           contentParagraphs={contentParagraphs}
           title={data?.aboutLocale?.title ?? ''}
+          onClose={methods.handleAboutDialog}
         />
       </Dialog>
 
