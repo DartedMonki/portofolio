@@ -6,8 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint --fix",
-    "post-update": "echo \"codesandbox preview only, need an update\" && yarn upgrade --latest"
+    "post-update": "echo \"codesandbox preview only, need an update\" && yarn upgrade --latest",
+    "dev:debug": "cross-env NODE_OPTIONS='--inspect' next dev",
+    "lint": "next lint && tsc --noEmit",
+    "lint:fix": "next lint --fix && tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@emotion/cache": "latest",
@@ -18,23 +22,29 @@
     "@mui/material": "latest",
     "clsx": "^1.2.1",
     "dayjs": "^1.11.7",
-    "next": "latest",
+    "next": "^14.2.23",
     "notistack": "^2.0.5",
     "react": "latest",
     "react-dom": "latest",
     "swiper": "^9.2.2"
   },
   "devDependencies": {
+    "@trivago/prettier-plugin-sort-imports": "^4.3.0",
     "@types/node": "latest",
     "@types/react": "latest",
-    "@typescript-eslint/eslint-plugin": "^5.32.0",
-    "@typescript-eslint/parser": "^5.32.0",
-    "eslint": "^8.21.0",
-    "eslint-config-next": "latest",
-    "eslint-import-resolver-typescript": "^3.4.0",
-    "eslint-plugin-import": "^2.26.0",
-    "eslint-plugin-react": "^7.30.1",
-    "eslint-plugin-unused-imports": "^2.0.0",
-    "typescript": "^4.7.4"
+    "@typescript-eslint/eslint-plugin": "^5.62.0",
+    "@typescript-eslint/parser": "^5.62.0",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.15",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-import-resolver-typescript": "^3.6.3",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-jsx-a11y": "^6.10.0",
+    "eslint-plugin-prettier": "^5.2.1",
+    "eslint-plugin-react": "^7.37.1",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "eslint-plugin-unused-imports": "^4.1.4",
+    "prettier": "^3.3.3",
+    "typescript": "5.1.6"
   }
 }

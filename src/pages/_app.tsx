@@ -1,4 +1,5 @@
-import { useRef } from 'react';
+/* eslint-disable react/no-unknown-property */
+import '~/utils/global.css';
 
 import { CacheProvider, EmotionCache } from '@emotion/react';
 import { Cancel as CancelIcon } from '@mui/icons-material';
@@ -9,11 +10,10 @@ import { AppProps } from 'next/app';
 import { Didact_Gothic } from 'next/font/google';
 import Head from 'next/head';
 import { SnackbarProvider } from 'notistack';
+import { useRef } from 'react';
 
 import createEmotionCache from '~/utils/createEmotionCache';
 import theme from '~/utils/theme';
-
-import '~/utils/global.css';
 
 const didactGothic = Didact_Gothic({
   weight: ['400'],
@@ -26,7 +26,7 @@ interface MyAppProps extends AppProps {
   emotionCache?: EmotionCache;
 }
 
-export default function MyApp(props: MyAppProps) {
+export default function MyApp(props: Readonly<MyAppProps>) {
   const { Component, emotionCache = clientSideEmotionCache, pageProps } = props;
   const snackbarRef = useRef(null) as any;
 
@@ -42,11 +42,7 @@ export default function MyApp(props: MyAppProps) {
           <title>DartedMonki</title>
           <meta name="viewport" content="initial-scale=1, width=device-width" />
           <link rel="shortcut icon" href="/images/favicon.ico" />
-          <link
-            rel="apple-touch-icon"
-            sizes="180x180"
-            href="/images/apple-touch-icon.png"
-          />
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png" />
           <link
             rel="icon"
             type="image/png"
@@ -59,18 +55,8 @@ export default function MyApp(props: MyAppProps) {
             sizes="192x192"
             href="/images/android-chrome-192x192.png"
           />
-          <link
-            rel="icon"
-            type="image/png"
-            sizes="32x32"
-            href="/images/favicon-32x32.png"
-          />
-          <link
-            rel="icon"
-            type="image/png"
-            sizes="16x16"
-            href="/images/favicon-16x16.png"
-          />
+          <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png" />
+          <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png" />
         </Head>
         <ThemeProvider theme={theme}>
           {/* CssBaseline kickstart an elegant, consistent, and simple baseline to build upon. */}
@@ -83,9 +69,7 @@ export default function MyApp(props: MyAppProps) {
               horizontal: 'center',
             }}
             action={(snackbarId) => (
-              <IconButton
-                onClick={() => snackbarRef.current.closeSnackbar(snackbarId)}
-              >
+              <IconButton onClick={() => snackbarRef.current.closeSnackbar(snackbarId)}>
                 <CancelIcon htmlColor="white" />
               </IconButton>
             )}

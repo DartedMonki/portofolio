@@ -1,7 +1,4 @@
-import {
-  GitHub as GitHubIcon,
-  LinkedIn as LinkedInIcon,
-} from '@mui/icons-material';
+import { GitHub as GitHubIcon, LinkedIn as LinkedInIcon } from '@mui/icons-material';
 import { Fab } from '@mui/material';
 import { useRouter } from 'next/router';
 

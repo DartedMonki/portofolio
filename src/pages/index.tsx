@@ -1,15 +1,14 @@
-import type {
-  GetServerSideProps,
-  InferGetServerSidePropsType,
-  NextPage,
-} from 'next';
+import type { GetServerSideProps, InferGetServerSidePropsType, NextPage } from 'next';
 
 import Home from '~/modules/Home';
 
-const Index: NextPage = ({
-  ipAddress,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) => (
-  <Home ipAddress={ipAddress} />
+import SEO from '../components/SEO';
+
+const Index: NextPage = ({ ipAddress }: InferGetServerSidePropsType<typeof getServerSideProps>) => (
+  <>
+    <SEO />
+    <Home ipAddress={ipAddress} />
+  </>
 );
 
 export default Index;
