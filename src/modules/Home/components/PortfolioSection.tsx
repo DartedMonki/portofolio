@@ -2,7 +2,7 @@ import 'swiper/css';
 import 'swiper/css/effect-cards';
 
 import { GitHub, Language } from '@mui/icons-material';
-import { Typography } from '@mui/material';
+import { CircularProgress, Typography, useMediaQuery, useTheme } from '@mui/material';
 import Box from '@mui/material/Box';
 import Image from 'next/image';
 import { memo, useEffect, useState } from 'react';
@@ -134,48 +134,182 @@ const calculateAspectRatioStyle = (
   return { width: `${Math.round(640 * aspectRatio)}px`, height: '640px' };
 };
 
+const ProjectHeader = memo(
+  ({
+    title,
+    technologies,
+    isDark,
+  }: {
+    title: string;
+    technologies: string[];
+    isDark?: boolean;
+  }) => (
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        my: 3,
+      }}
+    >
+      <Typography variant="h4" fontWeight="bold" color={isDark ? 'white' : 'inherit'}>
+        {title}
+      </Typography>
+      <Typography
+        variant="subtitle1"
+        color={isDark ? 'rgba(255, 255, 255, 0.7)' : 'text.secondary'}
+        sx={{ mt: 1 }}
+      >
+        {technologies.join(' • ')}
+      </Typography>
+    </Box>
+  )
+);
+
+ProjectHeader.displayName = 'ProjectHeader';
+
+const ProjectLink = memo(
+  ({ link, isDark, title }: { link?: ProjectLink; isDark?: boolean; title: string }) => (
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        my: 3,
+      }}
+    >
+      {link && (
+        <BlackBorderButtonLink
+          href={link.href}
+          invert={isDark}
+          aria-label={`Visit ${title} ${link.text}`}
+        >
+          <link.icon sx={{ mr: 1 }} aria-hidden="true" />
+          {link.text}
+        </BlackBorderButtonLink>
+      )}
+    </Box>
+  )
+);
+
+ProjectLink.displayName = 'ProjectLink';
+
+const LoadingProjectCard = memo(
+  ({ project, isMobile }: { project: Project; isMobile: boolean }) => (
+    <Box
+      component="section"
+      sx={{
+        minHeight: '100vh',
+        backgroundColor: project.isDark ? 'black' : 'white',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+    >
+      <ProjectHeader
+        title={project.title}
+        technologies={project.technologies}
+        isDark={project.isDark}
+      />
+      <Box
+        sx={{
+          width: isMobile ? '256px' : '640px',
+          height: isMobile ? '144px' : '360px',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: 'white',
+          borderRadius: '20px',
+          boxShadow: '12px 18px 34px -16px rgba(66, 68, 90, 1)',
+        }}
+      >
+        <CircularProgress
+          sx={{
+            color: project.isDark ? 'white' : 'primary.main',
+          }}
+        />
+      </Box>
+      <ProjectLink link={project.link} isDark={project.isDark} title={project.title} />
+    </Box>
+  )
+);
+
+LoadingProjectCard.displayName = 'LoadingProjectCard';
+
+const ProjectSlides = memo(
+  ({ project, dimensions }: { project: Project; dimensions: AspectRatioStyle }) => (
+    <Swiper
+      effect="cards"
+      grabCursor={true}
+      modules={[EffectCards]}
+      className={styles.swiper}
+      style={{ ...dimensions, marginLeft: 'auto', marginRight: 'auto' }}
+      a11y={{
+        prevSlideMessage: 'Previous slide',
+        nextSlideMessage: 'Next slide',
+        firstSlideMessage: 'This is the first slide',
+        lastSlideMessage: 'This is the last slide',
+      }}
+    >
+      {project.images.map((image, index) => (
+        <SwiperSlide key={image.src}>
+          <Box
+            sx={{
+              position: 'relative',
+              width: '100%',
+              height: '100%',
+              backgroundColor: 'white',
+            }}
+            role="group"
+            aria-label={`Slide ${index + 1} of ${project.images.length}`}
+          >
+            <Image
+              src={image.src}
+              alt={image.alt}
+              fill
+              sizes={`(max-width: 767px) 256px, ${dimensions.width}`}
+              style={{
+                objectFit: 'contain',
+              }}
+              priority={image.priority}
+              loading={image.priority ? 'eager' : 'lazy'}
+            />
+          </Box>
+        </SwiperSlide>
+      ))}
+    </Swiper>
+  )
+);
+
+ProjectSlides.displayName = 'ProjectSlides';
+
 const ProjectCard = memo(({ project }: ProjectCardProps) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [dimensions, setDimensions] = useState<AspectRatioStyle | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
+    let mounted = true;
+    const calculateDimensions = async () => {
+      if (!project.images[0]) return;
+      try {
+        const { width, height } = await getImageDimensions(project.images[0].src);
+        if (mounted) {
+          setDimensions(calculateAspectRatioStyle(width, height, isMobile));
+        }
+        // eslint-disable-next-line no-empty
+      } catch (_error) {}
     };
 
-    handleResize(); // Initial check
-    window.addEventListener('resize', handleResize);
-
-    // Get dimensions of the first image
-    if (project.images[0]) {
-      getImageDimensions(project.images[0].src).then(({ width, height }) => {
-        setDimensions(calculateAspectRatioStyle(width, height, window.innerWidth < 768));
-      });
-    }
-
+    calculateDimensions();
     return () => {
-      window.removeEventListener('resize', handleResize);
+      mounted = false;
     };
-  }, [project.images]);
-
-  // Update dimensions when screen size changes
-  useEffect(() => {
-    if (project.images[0]) {
-      getImageDimensions(project.images[0].src).then(({ width, height }) => {
-        setDimensions(calculateAspectRatioStyle(width, height, isMobile));
-      });
-    }
-  }, [isMobile, project.images]);
+  }, [project.images, isMobile]);
 
   if (!dimensions) {
-    return null; // or a loading state
+    return <LoadingProjectCard project={project} isMobile={isMobile} />;
   }
-
-  const dynamicSwiperStyle = {
-    ...dimensions,
-    marginLeft: 'auto',
-    marginRight: 'auto',
-  };
 
   return (
     <Box
@@ -189,90 +323,13 @@ const ProjectCard = memo(({ project }: ProjectCardProps) => {
       }}
       aria-labelledby={`project-${project.title}`}
     >
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          my: 3,
-        }}
-      >
-        <Typography
-          variant="h4"
-          fontWeight="bold"
-          color={project.isDark ? 'white' : 'inherit'}
-          id={`project-${project.title}`}
-        >
-          {project.title}
-        </Typography>
-        <Typography
-          variant="subtitle1"
-          color={project.isDark ? 'rgba(255, 255, 255, 0.7)' : 'text.secondary'}
-          sx={{ mt: 1 }}
-        >
-          {project.technologies.join(' • ')}
-        </Typography>
-      </Box>
-
-      <Swiper
-        effect="cards"
-        grabCursor={true}
-        modules={[EffectCards]}
-        className={styles.swiper}
-        style={dynamicSwiperStyle}
-        a11y={{
-          prevSlideMessage: 'Previous slide',
-          nextSlideMessage: 'Next slide',
-          firstSlideMessage: 'This is the first slide',
-          lastSlideMessage: 'This is the last slide',
-        }}
-      >
-        {project.images.map((image, index) => (
-          <SwiperSlide key={image.src}>
-            <Box
-              sx={{
-                position: 'relative',
-                width: '100%',
-                height: '100%',
-                backgroundColor: 'white',
-              }}
-              role="group"
-              aria-label={`Slide ${index + 1} of ${project.images.length}`}
-            >
-              <Image
-                src={image.src}
-                alt={image.alt}
-                fill
-                sizes={`(max-width: 767px) 256px, ${dimensions.width}`}
-                style={{
-                  objectFit: 'contain',
-                }}
-                priority={image.priority}
-                loading={image.priority ? 'eager' : 'lazy'}
-              />
-            </Box>
-          </SwiperSlide>
-        ))}
-      </Swiper>
-
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          my: 3,
-        }}
-      >
-        {project.link && (
-          <BlackBorderButtonLink
-            href={project.link.href}
-            invert={project.isDark}
-            aria-label={`Visit ${project.title} ${project.link.text}`}
-          >
-            <project.link.icon sx={{ mr: 1 }} aria-hidden="true" />
-            {project.link.text}
-          </BlackBorderButtonLink>
-        )}
-      </Box>
+      <ProjectHeader
+        title={project.title}
+        technologies={project.technologies}
+        isDark={project.isDark}
+      />
+      <ProjectSlides project={project} dimensions={dimensions} />
+      <ProjectLink link={project.link} isDark={project.isDark} title={project.title} />
     </Box>
   );
 });
