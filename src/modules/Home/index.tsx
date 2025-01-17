@@ -17,7 +17,7 @@ import { memo, useCallback } from 'react';
 
 import FabMenu from '~/components/FabMenu';
 
-import PortfolioSection from './portfolio-section';
+import PortfolioSection from './components/PortfolioSection';
 import useHome from './useHome';
 
 const DynamicScrollToTop = dynamic(() => import('~/src/components/ScrollToTop'), {
