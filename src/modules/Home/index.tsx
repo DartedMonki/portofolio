@@ -13,28 +13,41 @@ import {
 } from '@mui/material';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
-import { memo, useCallback } from 'react';
+import { type FC, memo, useCallback, useMemo } from 'react';
 
-import FabMenu from '~/components/FabMenu';
-
-import PortfolioSection from './components/PortfolioSection';
 import useHome from './useHome';
 
-const DynamicScrollToTop = dynamic(() => import('~/src/components/ScrollToTop'), {
-  ssr: false,
+const DynamicScrollToTop = dynamic(
+  () => import('~/components/ScrollToTop').then((mod) => mod.default),
+  {
+    ssr: false,
+    loading: () => null,
+  }
+);
+
+const DynamicFabMenu = dynamic(() => import('~/components/FabMenu').then((mod) => mod.default), {
   loading: () => null,
 });
 
-const AboutDialogContent = memo(
-  ({
-    contentParagraphs,
-    title,
-    onClose,
-  }: {
-    contentParagraphs: string[];
-    title: string;
-    onClose: () => void;
-  }) => (
+const DynamicPortfolioSection = dynamic(
+  () => import('./components/PortfolioSection').then((mod) => mod.default),
+  {
+    loading: () => <Box sx={{ minHeight: '100vh' }} />,
+  }
+);
+
+interface AboutDialogContentProps {
+  contentParagraphs: string[];
+  title: string;
+  onClose: () => void;
+}
+
+export interface HomeProps {
+  ipAddress: string;
+}
+
+const AboutDialogContent: FC<AboutDialogContentProps> = memo(
+  ({ contentParagraphs, title, onClose }) => (
     <Paper
       elevation={0}
       sx={{
@@ -125,19 +138,17 @@ const AboutDialogContent = memo(
 
 AboutDialogContent.displayName = 'AboutDialogContent';
 
-export interface HomeProps {
-  ipAddress: string;
-}
-
-const Home = ({ ipAddress }: HomeProps) => {
+const Home: FC<HomeProps> = memo(({ ipAddress }) => {
   const { data, methods } = useHome({ ipAddress });
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // Split content into paragraphs with proper typing
-  const contentParagraphs: string[] =
-    data?.aboutLocale?.content?.replace('{years}', data.yearsOfExperience || '').split('\n\n') ??
-    [];
+  const contentParagraphs: string[] = useMemo(
+    () =>
+      data?.aboutLocale?.content?.replace('{years}', data.yearsOfExperience || '').split('\n\n') ??
+      [],
+    [data?.aboutLocale?.content, data.yearsOfExperience]
+  );
 
   const handleKeyPress = useCallback(
     (e: React.KeyboardEvent) => {
@@ -252,10 +263,12 @@ const Home = ({ ipAddress }: HomeProps) => {
               alt="Afriyadi Y. R.'s profile picture"
               priority
               quality={90}
+              loading="eager"
+              sizes="200px"
             />
           </Button>
           <Typography
-            variant="h4"
+            variant="h1"
             component="h1"
             color="white"
             gutterBottom
@@ -263,16 +276,19 @@ const Home = ({ ipAddress }: HomeProps) => {
               mt: 2,
               fontWeight: 500,
               letterSpacing: 0.5,
+              fontSize: { xs: '2rem', sm: '2.25rem' },
             }}
           >
             afriyadi y. r.
           </Typography>
         </Box>
-        <FabMenu />
-        <PortfolioSection />
+        <DynamicFabMenu />
+        <DynamicPortfolioSection />
       </main>
     </>
   );
-};
+});
 
-export default memo(Home);
+Home.displayName = 'Home';
+
+export default Home;

@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 import { useSnackbar } from 'notistack';
-import { MutableRefObject, useEffect, useMemo, useRef, useState } from 'react';
+import { MutableRefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import about from '~/src/locale/about';
 import alert from '~/src/locale/alert';
@@ -9,44 +9,59 @@ import useLocale from '~/src/locale/useLocale';
 import { mapTypedWordToUrl } from '~/src/utils/generateUrl';
 import { isEmpty } from '~/utils/lang';
 
-import { HomeProps } from '.';
+import type { HomeProps } from '.';
 
-const useHome = ({ ipAddress }: HomeProps) => {
-  const [openAboutDialog, setOpenAboutDialog] = useState(false);
+export interface About {
+  title: string;
+  content: string;
+  avatar: string;
+}
+
+export interface Home {
+  you: string;
+}
+
+interface UseHomeReturn {
+  data: {
+    aboutLocale: About;
+    homeLocale: Home;
+    objRef: MutableRefObject<HTMLDivElement>;
+    openAboutDialog: boolean;
+    typedWord: string[];
+    yearsOfExperience: string;
+  };
+  methods: {
+    handleAboutDialog: () => void;
+  };
+}
+
+const useHome = ({ ipAddress }: HomeProps): UseHomeReturn => {
+  const [openAboutDialog, setOpenAboutDialog] = useState<boolean>(false);
   const [typedWord, setTypedWord] = useState<string[]>([]);
-  const objRef = useRef(null) as unknown as MutableRefObject<HTMLDivElement>;
+
+  const objRef = useRef<HTMLDivElement>(null) as MutableRefObject<HTMLDivElement>;
 
   const { enqueueSnackbar } = useSnackbar();
   const alertLocale = useLocale(alert);
   const aboutLocale = useLocale(about);
   const homeLocale = useLocale(home);
 
-  const handleAboutDialog = () => {
-    setOpenAboutDialog((prev) => !prev);
-  };
-
   const yearsOfExperience = useMemo(() => {
     const startWorkDate = dayjs('2020-11-09');
     return dayjs().diff(startWorkDate, 'year', true).toFixed(1);
   }, []);
 
-  useEffect(() => {
-    const element = objRef.current;
+  const handleAboutDialog = useCallback(() => {
+    setOpenAboutDialog((prev) => !prev);
+  }, []);
 
-    const handleMoveObjectOnMouseMove = (e: MouseEvent) => {
-      if (!isEmpty(element)) {
-        element.style.display = 'block';
-        element.style.left = `${e.pageX + 15}px`;
-        element.style.top = `${e.pageY + 15}px`;
-      }
-    };
+  const handleUserType = useCallback(
+    (e: KeyboardEvent) => {
+      const { key: name, keyCode: code } = e;
 
-    const handleUserType = (e: KeyboardEvent) => {
-      const name = e.key;
-      const code = e.keyCode;
       if ((code > 64 && code < 91) || code === 32) {
         setTypedWord((prev) => [...prev, name]);
-      } else if (code == 8) {
+      } else if (code === 8) {
         setTypedWord((prev) => prev.slice(0, prev.length - 1));
       } else if (name === 'Enter') {
         const url = mapTypedWordToUrl?.[typedWord.join('')];
@@ -61,15 +76,28 @@ const useHome = ({ ipAddress }: HomeProps) => {
           autoHideDuration: 2500,
         });
       }
-    };
+    },
+    [alertLocale?.mouseMessage, enqueueSnackbar, ipAddress, typedWord]
+  );
 
+  const handleMoveObjectOnMouseMove = useCallback((e: MouseEvent) => {
+    const element = objRef.current;
+    if (!isEmpty(element)) {
+      element.style.display = 'block';
+      element.style.left = `${e.pageX + 15}px`;
+      element.style.top = `${e.pageY + 15}px`;
+    }
+  }, []);
+
+  useEffect(() => {
     document.addEventListener('mousemove', handleMoveObjectOnMouseMove);
     document.addEventListener('keydown', handleUserType, false);
+
     return () => {
       document.removeEventListener('mousemove', handleMoveObjectOnMouseMove);
       document.removeEventListener('keydown', handleUserType);
     };
-  }, [alertLocale?.mouseMessage, enqueueSnackbar, ipAddress, typedWord]);
+  }, [handleMoveObjectOnMouseMove, handleUserType]);
 
   return {
     data: {
@@ -80,7 +108,9 @@ const useHome = ({ ipAddress }: HomeProps) => {
       typedWord,
       yearsOfExperience,
     },
-    methods: { handleAboutDialog },
+    methods: {
+      handleAboutDialog,
+    },
   };
 };
 

@@ -51,6 +51,7 @@ export default function SEO({
       {/* Additional SEO tags */}
       <meta name="robots" content="index, follow" />
       <link rel="canonical" href={fullUrl} />
+      <link rel="preconnect" href="https://avatars.githubusercontent.com" />
     </Head>
   );
 }
