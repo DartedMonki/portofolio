@@ -237,48 +237,67 @@ const LoadingProjectCard = memo(
 LoadingProjectCard.displayName = 'LoadingProjectCard';
 
 const ProjectSlides = memo(
-  ({ project, dimensions }: { project: Project; dimensions: AspectRatioStyle }) => (
-    <Swiper
-      effect="cards"
-      grabCursor={true}
-      modules={[EffectCards]}
-      className={styles.swiper}
-      style={{ ...dimensions, marginLeft: 'auto', marginRight: 'auto' }}
-      a11y={{
-        prevSlideMessage: 'Previous slide',
-        nextSlideMessage: 'Next slide',
-        firstSlideMessage: 'This is the first slide',
-        lastSlideMessage: 'This is the last slide',
-      }}
-    >
-      {project.images.map((image, index) => (
-        <SwiperSlide key={image.src}>
-          <Box
-            sx={{
-              position: 'relative',
-              width: '100%',
-              height: '100%',
-              backgroundColor: 'white',
-            }}
-            role="group"
-            aria-label={`Slide ${index + 1} of ${project.images.length}`}
-          >
-            <Image
-              src={image.src}
-              alt={image.alt}
-              fill
-              sizes={`(max-width: 767px) 256px, ${dimensions.width}`}
-              style={{
-                objectFit: 'contain',
+  ({ project, dimensions }: { project: Project; dimensions: AspectRatioStyle }) => {
+    const [activeIndex, setActiveIndex] = useState(0);
+
+    useEffect(() => {
+      if (activeIndex < project.images.length - 1) {
+        const nextImage = new window.Image();
+        nextImage.src = project.images[activeIndex + 1].src;
+      }
+    }, [activeIndex, project.images]);
+
+    return (
+      <Swiper
+        effect="cards"
+        grabCursor={true}
+        modules={[EffectCards]}
+        className={styles.swiper}
+        style={{ ...dimensions, marginLeft: 'auto', marginRight: 'auto' }}
+        onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
+        watchSlidesProgress={true}
+        a11y={{
+          prevSlideMessage: 'Previous slide',
+          nextSlideMessage: 'Next slide',
+          firstSlideMessage: 'This is the first slide',
+          lastSlideMessage: 'This is the last slide',
+        }}
+      >
+        {project.images.map((image, index) => (
+          <SwiperSlide key={image.src}>
+            <Box
+              sx={{
+                position: 'relative',
+                width: '100%',
+                height: '100%',
+                backgroundColor: 'white',
+                overflow: 'hidden',
               }}
-              priority={image.priority}
-              loading={image.priority ? 'eager' : 'lazy'}
-            />
-          </Box>
-        </SwiperSlide>
-      ))}
-    </Swiper>
-  )
+              role="group"
+              aria-label={`Slide ${index + 1} of ${project.images.length}`}
+            >
+              <Image
+                src={image.src}
+                alt={image.alt}
+                fill
+                sizes={`(max-width: 767px) 256px, ${dimensions.width}`}
+                style={{
+                  objectFit: 'contain',
+                  transform: 'translate3d(0, 0, 0)',
+                }}
+                priority={index === 0 || index === 1}
+                quality={65}
+                loading={index <= 1 ? 'eager' : 'lazy'}
+                onLoadingComplete={(img) => {
+                  img.classList.add('loaded');
+                }}
+              />
+            </Box>
+          </SwiperSlide>
+        ))}
+      </Swiper>
+    );
+  }
 );
 
 ProjectSlides.displayName = 'ProjectSlides';
