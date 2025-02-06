@@ -6,7 +6,7 @@ import { CircularProgress, Typography, useMediaQuery, useTheme } from '@mui/mate
 import Box from '@mui/material/Box';
 import Image from 'next/image';
 import { memo, useEffect, useState } from 'react';
-import { EffectCards } from 'swiper';
+import { EffectCards } from 'swiper/modules';
 import { Swiper, SwiperSlide } from 'swiper/react';
 
 import BlackBorderButtonLink from '~/src/components/BlackBorderButtonLink';
@@ -35,24 +35,9 @@ export interface Project {
 
 export const PORTFOLIO_PROJECTS: Project[] = [
   {
-    title: 'Castle Journey',
-    technologies: ['Unity', 'C#'],
-    images: [
-      { src: '/images/main-menu.png', alt: 'Castle Journey Main Menu' },
-      { src: '/images/world-1.png', alt: 'Castle Journey World 1' },
-      { src: '/images/world-2.png', alt: 'Castle Journey World 2' },
-      { src: '/images/boss.png', alt: 'Castle Journey Boss Battle' },
-    ],
-    link: {
-      href: 'https://github.com/DartedMonki/castle-journey',
-      text: 'Github Repository',
-      icon: GitHub,
-    },
-  },
-  {
     title: 'Wingbox',
     technologies: ['Next.js', 'Fiber (Go)', 'PostgreSQL'],
-    isDark: true,
+    isDark: false,
     images: [
       { src: '/images/wingbox-home.png', alt: 'Wingbox Home Page', priority: true },
       { src: '/images/wingbox-calculator.png', alt: 'Wingbox Calculator Interface' },
@@ -62,6 +47,19 @@ export const PORTFOLIO_PROJECTS: Project[] = [
     ],
     link: {
       href: 'https://wingbox.id',
+      text: 'Website',
+      icon: Language,
+    },
+  },
+  {
+    title: 'Intermedia Prima Vision',
+    technologies: ['Javascript', 'HTML', 'Tailwind CSS'],
+    isDark: true,
+    images: [
+      { src: '/images/ipvision.png', alt: 'Intermedia Prima Vision Home Page', priority: true },
+    ],
+    link: {
+      href: 'https://ipvision.id/',
       text: 'Website',
       icon: Language,
     },
@@ -88,6 +86,22 @@ export const PORTFOLIO_PROJECTS: Project[] = [
       { src: '/images/sembunyi-social-3.png', alt: 'Sembunyi Social Notification Screen' },
       { src: '/images/sembunyi-social-4.png', alt: 'Sembunyi Social Settings Screen' },
     ],
+  },
+  {
+    title: 'Castle Journey',
+    technologies: ['Unity', 'C#'],
+    isDark: false,
+    images: [
+      { src: '/images/main-menu.png', alt: 'Castle Journey Main Menu' },
+      { src: '/images/world-1.png', alt: 'Castle Journey World 1' },
+      { src: '/images/world-2.png', alt: 'Castle Journey World 2' },
+      { src: '/images/boss.png', alt: 'Castle Journey Boss Battle' },
+    ],
+    link: {
+      href: 'https://github.com/DartedMonki/castle-journey',
+      text: 'Github Repository',
+      icon: GitHub,
+    },
   },
 ];
 

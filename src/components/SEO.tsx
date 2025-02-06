@@ -18,9 +18,9 @@ interface SEOProps {
 }
 
 const defaultSEO = {
-  title: 'Afriyadi Y. R. - Software Engineer Portfolio',
+  title: 'Afriyadi Y. R. - Software Engineer',
   description:
-    'Software engineer with experience in React.js, Next.js, Vue.js, Spring, Laravel, and Flutter. View my projects and get in touch.',
+    'Software engineer with experience in React.js, Next.js, Vue.js, Spring, Go, Laravel, Flutter, and more. View my projects and get in touch.',
   openGraph: {
     type: 'website',
     image: 'https://avatars.githubusercontent.com/u/12370632?v=4',

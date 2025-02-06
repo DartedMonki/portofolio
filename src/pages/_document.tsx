@@ -1,4 +1,5 @@
 import createEmotionServer from '@emotion/server/create-instance';
+import { GlobalStyles } from '@mui/material';
 import Document, { Head, Html, Main, NextScript } from 'next/document';
 
 import createEmotionCache from '~/utils/createEmotionCache';
@@ -15,6 +16,14 @@ export default class MyDocument extends Document {
           {(this.props as any).emotionStyleTags}
         </Head>
         <body>
+          <GlobalStyles
+            styles={{
+              body: {
+                maxWidth: '100vw',
+                overflowX: 'hidden',
+              },
+            }}
+          />
           <Main />
           <NextScript />
         </body>
