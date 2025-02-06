@@ -212,6 +212,53 @@ const Home: FC<HomeProps> = memo(({ ipAddress }) => {
             justifyContent: 'center',
             alignItems: 'center',
             minHeight: '100vh',
+            position: 'relative',
+            overflow: 'hidden',
+            '&::before': {
+              content: '""',
+              position: 'fixed',
+              top: -30,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundImage:
+                'linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(/images/main-bg.jpg)',
+              backgroundPosition: 'top center',
+              backgroundSize: 'cover',
+              backgroundRepeat: 'no-repeat',
+              transform: 'scaleY(-1)',
+              opacity: 0,
+              zIndex: -1,
+              animation: 'fadeIn 1.5s ease-in forwards',
+              '@media (hover: hover)': {
+                transition: 'transform 0.5s ease-out',
+                '&:hover': {
+                  transform: 'scaleY(-1) scale(1.05)',
+                },
+              },
+              '@media (prefers-reduced-motion: no-preference)': {
+                animation: 'fadeIn 1.5s ease-in forwards, float 6s ease-in-out infinite',
+              },
+            },
+            '@keyframes fadeIn': {
+              '0%': {
+                opacity: 0,
+              },
+              '100%': {
+                opacity: 1,
+              },
+            },
+            '@keyframes float': {
+              '0%': {
+                transform: 'scaleY(-1) translateY(0px)',
+              },
+              '50%': {
+                transform: 'scaleY(-1) translateY(-30px)',
+              },
+              '100%': {
+                transform: 'scaleY(-1) translateY(0px)',
+              },
+            },
           }}
         >
           <Button
