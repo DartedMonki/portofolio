@@ -349,6 +349,8 @@ const ProjectCard = memo(({ project }: ProjectCardProps) => {
       component="section"
       sx={{
         minHeight: '100vh',
+        maxWidth: '100vw',
+        overflowX: 'hidden',
         backgroundColor: project.isDark ? 'black' : 'white',
         display: 'flex',
         flexDirection: 'column',
