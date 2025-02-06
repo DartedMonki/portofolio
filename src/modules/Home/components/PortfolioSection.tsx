@@ -4,12 +4,12 @@ import 'swiper/css/effect-cards';
 import { GitHub, Language } from '@mui/icons-material';
 import { CircularProgress, Typography, useMediaQuery, useTheme } from '@mui/material';
 import Box from '@mui/material/Box';
-import Image from 'next/image';
 import { memo, useEffect, useState } from 'react';
-import { EffectCards } from 'swiper/modules';
+import { EffectCards, Virtual } from 'swiper/modules';
 import { Swiper, SwiperSlide } from 'swiper/react';
 
 import BlackBorderButtonLink from '~/src/components/BlackBorderButtonLink';
+import OptimizedImage from '~/src/components/OptimizedImage';
 
 import styles from '../Home.module.css';
 
@@ -251,31 +251,41 @@ const LoadingProjectCard = memo(
 LoadingProjectCard.displayName = 'LoadingProjectCard';
 
 const ProjectSlides = memo(
-  ({ project, dimensions }: { project: Project; dimensions: AspectRatioStyle }) => {
-    const [activeIndex, setActiveIndex] = useState(0);
+  ({
+    project,
+    dimensions,
+    isMobile,
+  }: {
+    project: Project;
+    dimensions: AspectRatioStyle;
+    isMobile: boolean;
+  }) => {
+    const [isSSR, setIsSSR] = useState(true);
 
     useEffect(() => {
-      if (activeIndex < project.images.length - 1) {
-        const nextImage = new window.Image();
-        nextImage.src = project.images[activeIndex + 1].src;
-      }
-    }, [activeIndex, project.images]);
+      setIsSSR(false);
+    }, []);
+
+    if (isSSR) {
+      return null;
+    }
 
     return (
       <Swiper
         effect="cards"
         grabCursor={true}
-        modules={[EffectCards]}
+        modules={[EffectCards, Virtual]}
         className={styles.swiper}
-        style={{ ...dimensions, marginLeft: 'auto', marginRight: 'auto' }}
-        onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
-        watchSlidesProgress={true}
-        a11y={{
-          prevSlideMessage: 'Previous slide',
-          nextSlideMessage: 'Next slide',
-          firstSlideMessage: 'This is the first slide',
-          lastSlideMessage: 'This is the last slide',
+        style={{
+          ...dimensions,
+          marginLeft: 'auto',
+          marginRight: 'auto',
+          willChange: 'transform',
         }}
+        watchSlidesProgress={true}
+        speed={600}
+        resistance={true}
+        resistanceRatio={0.85}
       >
         {project.images.map((image, index) => (
           <SwiperSlide key={image.src}>
@@ -286,24 +296,24 @@ const ProjectSlides = memo(
                 height: '100%',
                 backgroundColor: 'white',
                 overflow: 'hidden',
+                transform: 'translate3d(0, 0, 0)',
               }}
               role="group"
               aria-label={`Slide ${index + 1} of ${project.images.length}`}
             >
-              <Image
+              <OptimizedImage
+                key={`${image.src}-${index}`}
                 src={image.src}
                 alt={image.alt}
                 fill
-                sizes={`(max-width: 767px) 256px, ${dimensions.width}`}
+                sizes="(max-width: 1024px) 480px, 640px"
                 style={{
                   objectFit: 'contain',
-                  transform: 'translate3d(0, 0, 0)',
                 }}
-                priority={index === 0 || index === 1}
-                quality={65}
-                loading={index <= 1 ? 'eager' : 'lazy'}
-                onLoadingComplete={(img) => {
-                  img.classList.add('loaded');
+                width={isMobile ? 480 : 640}
+                loading={index === 0 ? 'eager' : 'lazy'}
+                onLoad={(event) => {
+                  event.currentTarget.classList.add('loaded');
                 }}
               />
             </Box>
@@ -363,7 +373,7 @@ const ProjectCard = memo(({ project }: ProjectCardProps) => {
         technologies={project.technologies}
         isDark={project.isDark}
       />
-      <ProjectSlides project={project} dimensions={dimensions} />
+      <ProjectSlides project={project} dimensions={dimensions} isMobile={isMobile} />
       <ProjectLink link={project.link} isDark={project.isDark} title={project.title} />
     </Box>
   );

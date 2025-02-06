@@ -6,12 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "post-update": "echo \"codesandbox preview only, need an update\" && yarn upgrade --latest",
     "dev:debug": "cross-env NODE_OPTIONS='--inspect' next dev",
     "lint": "next lint && tsc --noEmit",
     "lint:fix": "next lint --fix && tsc --noEmit",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "optimize-images": "node --import 'data:text/javascript,import { register } from \"node:module\"; import { pathToFileURL } from \"node:url\"; register(\"ts-node/esm\", pathToFileURL(\"./\"));' scripts/optimize-images.mts",
+    "build:with-images": "npm run optimize-images && next build"
   },
   "dependencies": {
     "@emotion/cache": "latest",
@@ -27,14 +28,17 @@
     "notistack": "^2.0.5",
     "react": "latest",
     "react-dom": "latest",
-    "swiper": "^11.2.1"
+    "sharp": "^0.33.5",
+    "swiper": "^11.2.2"
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",
     "@types/node": "latest",
     "@types/react": "latest",
+    "@types/sharp": "^0.31.1",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
+    "cross-env": "^7.0.3",
     "eslint": "^8",
     "eslint-config-next": "14.2.15",
     "eslint-config-prettier": "^9.1.0",
@@ -46,6 +50,7 @@
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "eslint-plugin-unused-imports": "^4.1.4",
     "prettier": "^3.3.3",
+    "ts-node": "^10.9.2",
     "typescript": "5.1.6"
   }
 }
