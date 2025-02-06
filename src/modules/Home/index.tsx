@@ -16,6 +16,8 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { type FC, memo, useCallback, useMemo } from 'react';
 
+import TerrainBackground from '~/src/components/TerrainBackground';
+
 import useHome from './useHome';
 
 const DynamicScrollToTop = dynamic(
@@ -139,55 +141,6 @@ const AboutDialogContent: FC<AboutDialogContentProps> = memo(
 
 AboutDialogContent.displayName = 'AboutDialogContent';
 
-const AnimatedBackgroundContainer = styled(Box)(() => ({
-  position: 'fixed',
-  top: -30,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  zIndex: -1,
-  opacity: 0,
-  animation: 'fadeIn 1.5s ease-in forwards',
-  '@media (hover: hover)': {
-    transition: 'transform 0.5s ease-out',
-    '&:hover': {
-      transform: 'scale(1.05)',
-    },
-  },
-  '@media (prefers-reduced-motion: no-preference)': {
-    animation: 'fadeIn 1.5s ease-in forwards, float 6s ease-in-out infinite',
-  },
-  '&::after': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    zIndex: 1,
-  },
-  '@keyframes fadeIn': {
-    '0%': {
-      opacity: 0,
-    },
-    '100%': {
-      opacity: 1,
-    },
-  },
-  '@keyframes float': {
-    '0%': {
-      transform: 'translateY(0px)',
-    },
-    '50%': {
-      transform: 'translateY(-30px)',
-    },
-    '100%': {
-      transform: 'translateY(0px)',
-    },
-  },
-}));
-
 const MainSection = styled('section')({
   display: 'flex',
   flexDirection: 'column',
@@ -265,20 +218,7 @@ const Home: FC<HomeProps> = memo(({ ipAddress }) => {
         </Box>
 
         <MainSection>
-          <AnimatedBackgroundContainer>
-            <Image
-              src="/images/main-bg.jpg"
-              alt="Background"
-              fill
-              priority
-              sizes="100vw"
-              style={{
-                objectFit: 'cover',
-                transform: 'scaleY(-1)',
-              }}
-            />
-          </AnimatedBackgroundContainer>
-
+          <TerrainBackground />
           <Button
             onClick={methods.handleAboutDialog}
             sx={{
