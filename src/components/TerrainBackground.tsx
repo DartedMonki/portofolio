@@ -179,6 +179,36 @@ const TERRAIN_CONFIG = {
 } as const;
 
 /**
+ * Configuration for falling stars.
+ */
+const FALLING_STAR_CONFIG = {
+  starSize: 0.05,
+  starColor: new THREE.Color(255, 255, 255),
+  trailColor: new THREE.Color(0.9, 0.7, 0.2),
+  velocity: new THREE.Vector3(-0.15, -0.08, -0.05), // Adjusted for more horizontal movement
+  spawnProbability: 0.03,
+  maxStars: 5, // Increased for more stars
+  trailLength: 60, // Longer trails
+  trailSize: 0.15,
+  speed: 1.5, // Faster movement
+  fadeFactor: 0.94, // Slower fade for longer visible trails
+  spawnOffset: {
+    // New configuration for spawn position
+    x: { min: 30, max: 50 }, // Further to the right
+    y: { min: 15, max: 25 }, // Higher up
+    z: { min: -25, max: -10 }, // Varied depth
+  },
+} as const;
+
+interface FallingStar {
+  mesh: THREE.Mesh;
+  velocity: THREE.Vector3;
+  trail: THREE.Points;
+  trailPositions: THREE.Vector3[];
+  trailAlphas: Float32Array;
+}
+
+/**
  * Props for TerrainBackground component
  * @property onLoad - Optional callback triggered when initial terrain chunks are generated
  */
@@ -188,7 +218,8 @@ interface TerrainBackgroundProps {
 
 /**
  * Infinite Terrain Background Component
- * Generates and renders an infinite procedural terrain using Three.js
+ * Generates and renders an infinite procedural terrain using Three.js,
+ * and intermittently spawns falling stars with configurable behavior.
  */
 const TerrainBackground: React.FC<TerrainBackgroundProps> = ({ onLoad }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -201,6 +232,9 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({ onLoad }) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const chunkGenerationQueue = useRef<Array<[number, number]>>([]);
   const generatedChunks = useRef(0);
+
+  // Store falling stars along with their trails.
+  const fallingStars = useRef<FallingStar[]>([]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -373,11 +407,162 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({ onLoad }) => {
       });
     };
 
+    /**
+     * Creates a falling star along with its trail.
+     */
+    const createFallingStar = () => {
+      // Comet head
+      const starGeometry = new THREE.SphereGeometry(FALLING_STAR_CONFIG.starSize, 8, 8);
+      const starMaterial = new THREE.MeshBasicMaterial({
+        color: FALLING_STAR_CONFIG.starColor,
+        transparent: true,
+        opacity: 0.8,
+      });
+      const starMesh = new THREE.Mesh(starGeometry, starMaterial);
+
+      // Starting position relative to camera
+      const startX =
+        camera.position.x +
+        FALLING_STAR_CONFIG.spawnOffset.x.min +
+        Math.random() *
+          (FALLING_STAR_CONFIG.spawnOffset.x.max - FALLING_STAR_CONFIG.spawnOffset.x.min);
+      const startY =
+        camera.position.y +
+        FALLING_STAR_CONFIG.spawnOffset.y.min +
+        Math.random() *
+          (FALLING_STAR_CONFIG.spawnOffset.y.max - FALLING_STAR_CONFIG.spawnOffset.y.min);
+      const startZ =
+        camera.position.z +
+        FALLING_STAR_CONFIG.spawnOffset.z.min +
+        Math.random() *
+          (FALLING_STAR_CONFIG.spawnOffset.z.max - FALLING_STAR_CONFIG.spawnOffset.z.min);
+
+      starMesh.position.set(startX, startY, startZ);
+
+      // Comet trail (particle system)
+      const trailGeometry = new THREE.BufferGeometry();
+      const trailPositions = new Array(FALLING_STAR_CONFIG.trailLength)
+        .fill(null)
+        .map(() => starMesh.position.clone());
+
+      const trailAlphas = new Float32Array(FALLING_STAR_CONFIG.trailLength).fill(0);
+      const trailAttributes = {
+        position: new THREE.BufferAttribute(
+          new Float32Array(3 * FALLING_STAR_CONFIG.trailLength),
+          3
+        ),
+        alpha: new THREE.BufferAttribute(trailAlphas, 1),
+      };
+
+      trailGeometry.setAttribute('position', trailAttributes.position);
+      trailGeometry.setAttribute('alpha', trailAttributes.alpha);
+
+      const trailMaterial = new THREE.PointsMaterial({
+        color: FALLING_STAR_CONFIG.trailColor,
+        size: FALLING_STAR_CONFIG.trailSize,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      });
+
+      // Custom shader for fading trail
+      trailMaterial.onBeforeCompile = (shader) => {
+        shader.vertexShader = `
+          attribute float alpha;
+          varying float vAlpha;
+          ${shader.vertexShader}
+        `.replace(
+          '#include <begin_vertex>',
+          `
+          #include <begin_vertex>
+          vAlpha = alpha;
+        `
+        );
+
+        shader.fragmentShader = `
+          varying float vAlpha;
+          ${shader.fragmentShader}
+        `.replace(
+          '#include <color_fragment>',
+          `
+          #include <color_fragment>
+          diffuseColor.a *= vAlpha;
+        `
+        );
+      };
+
+      const trail = new THREE.Points(trailGeometry, trailMaterial);
+
+      scene.add(starMesh);
+      scene.add(trail);
+
+      fallingStars.current.push({
+        mesh: starMesh,
+        velocity: FALLING_STAR_CONFIG.velocity.clone().multiplyScalar(FALLING_STAR_CONFIG.speed),
+        trail,
+        trailPositions,
+        trailAlphas,
+      });
+    };
+
+    /**
+     * Updates falling stars and their trails.
+     */
+    const updateFallingStars = () => {
+      fallingStars.current.forEach((star, index) => {
+        // Update comet position
+        star.mesh.position.add(star.velocity);
+
+        // Update trail positions and alphas
+        star.trailPositions.unshift(star.mesh.position.clone());
+        if (star.trailPositions.length > FALLING_STAR_CONFIG.trailLength) {
+          star.trailPositions.pop();
+        }
+
+        // Update alpha values (fade out)
+        star.trailAlphas = new Float32Array(
+          star.trailPositions.map((_, i) => Math.pow(FALLING_STAR_CONFIG.fadeFactor, i) * 0.8)
+        );
+
+        // Update buffer attributes
+        const positions = star.trail.geometry.attributes.position.array as Float32Array;
+        const alphas = star.trail.geometry.attributes.alpha.array as Float32Array;
+
+        star.trailPositions.forEach((pos, i) => {
+          positions[i * 3] = pos.x;
+          positions[i * 3 + 1] = pos.y;
+          positions[i * 3 + 2] = pos.z;
+          alphas[i] = star.trailAlphas[i];
+        });
+
+        star.trail.geometry.attributes.position.needsUpdate = true;
+        star.trail.geometry.attributes.alpha.needsUpdate = true;
+
+        // Remove old stars
+        if (star.mesh.position.y < camera.position.y - 15) {
+          scene.remove(star.mesh);
+          scene.remove(star.trail);
+          fallingStars.current.splice(index, 1);
+        }
+      });
+    };
+
     const animate = () => {
       // Generate chunks in batches
       if (chunkGenerationQueue.current.length > 0) {
         generateChunkBatch();
       }
+
+      // Spawn a new falling star per frame based on the spawn probability,
+      // as long as we haven't reached the maximum number of stars.
+      if (
+        fallingStars.current.length < FALLING_STAR_CONFIG.maxStars &&
+        Math.random() < FALLING_STAR_CONFIG.spawnProbability
+      ) {
+        createFallingStar();
+      }
+
+      updateFallingStars();
 
       // Use lerp for smooth camera movement
       currentSpeed.current.lerp(TERRAIN_CONFIG.moveSpeed, 0.02);
@@ -426,6 +611,12 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({ onLoad }) => {
       });
       terrainMaterial.dispose();
       renderer.dispose();
+      fallingStars.current.forEach(({ mesh, trail }) => {
+        mesh.geometry.dispose();
+        trail.geometry.dispose();
+        scene.remove(mesh);
+        scene.remove(trail);
+      });
     };
   }, []);
 
