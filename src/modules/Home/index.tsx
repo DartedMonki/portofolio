@@ -11,6 +11,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
+import { styled } from '@mui/system';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { type FC, memo, useCallback, useMemo } from 'react';
@@ -138,6 +139,65 @@ const AboutDialogContent: FC<AboutDialogContentProps> = memo(
 
 AboutDialogContent.displayName = 'AboutDialogContent';
 
+const AnimatedBackgroundContainer = styled(Box)(() => ({
+  position: 'fixed',
+  top: -30,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  zIndex: -1,
+  opacity: 0,
+  animation: 'fadeIn 1.5s ease-in forwards',
+  '@media (hover: hover)': {
+    transition: 'transform 0.5s ease-out',
+    '&:hover': {
+      transform: 'scale(1.05)',
+    },
+  },
+  '@media (prefers-reduced-motion: no-preference)': {
+    animation: 'fadeIn 1.5s ease-in forwards, float 6s ease-in-out infinite',
+  },
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 1,
+  },
+  '@keyframes fadeIn': {
+    '0%': {
+      opacity: 0,
+    },
+    '100%': {
+      opacity: 1,
+    },
+  },
+  '@keyframes float': {
+    '0%': {
+      transform: 'translateY(0px)',
+    },
+    '50%': {
+      transform: 'translateY(-30px)',
+    },
+    '100%': {
+      transform: 'translateY(0px)',
+    },
+  },
+}));
+
+const MainSection = styled('section')({
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  alignItems: 'center',
+  minHeight: '100vh',
+  position: 'relative',
+  overflow: 'hidden',
+});
+
 const Home: FC<HomeProps> = memo(({ ipAddress }) => {
   const { data, methods } = useHome({ ipAddress });
   const theme = useTheme();
@@ -190,6 +250,9 @@ const Home: FC<HomeProps> = memo(({ ipAddress }) => {
       <main>
         <DynamicScrollToTop />
         <Box
+          ref={data.objRef}
+          role="status"
+          aria-live="polite"
           sx={{
             position: 'absolute',
             display: 'none',
@@ -197,70 +260,26 @@ const Home: FC<HomeProps> = memo(({ ipAddress }) => {
             zIndex: 99,
             whiteSpace: 'nowrap',
           }}
-          ref={data.objRef}
-          role="status"
-          aria-live="polite"
         >
           {data.typedWord.length > 0 ? `${data?.homeLocale?.you}${data.typedWord.join('')}` : ''}
         </Box>
 
-        <Box
-          component="section"
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            minHeight: '100vh',
-            position: 'relative',
-            overflow: 'hidden',
-            '&::before': {
-              content: '""',
-              position: 'fixed',
-              top: -30,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundImage:
-                'linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url(/images/main-bg.jpg)',
-              backgroundPosition: 'top center',
-              backgroundSize: 'cover',
-              backgroundRepeat: 'no-repeat',
-              transform: 'scaleY(-1)',
-              opacity: 0,
-              zIndex: -1,
-              animation: 'fadeIn 1.5s ease-in forwards',
-              '@media (hover: hover)': {
-                transition: 'transform 0.5s ease-out',
-                '&:hover': {
-                  transform: 'scaleY(-1) scale(1.05)',
-                },
-              },
-              '@media (prefers-reduced-motion: no-preference)': {
-                animation: 'fadeIn 1.5s ease-in forwards, float 6s ease-in-out infinite',
-              },
-            },
-            '@keyframes fadeIn': {
-              '0%': {
-                opacity: 0,
-              },
-              '100%': {
-                opacity: 1,
-              },
-            },
-            '@keyframes float': {
-              '0%': {
-                transform: 'scaleY(-1) translateY(0px)',
-              },
-              '50%': {
-                transform: 'scaleY(-1) translateY(-30px)',
-              },
-              '100%': {
-                transform: 'scaleY(-1) translateY(0px)',
-              },
-            },
-          }}
-        >
+        <MainSection>
+          <AnimatedBackgroundContainer>
+            <Image
+              src="/images/main-bg.jpg"
+              alt="Background"
+              fill
+              priority
+              quality={90}
+              sizes="100vw"
+              style={{
+                objectFit: 'cover',
+                transform: 'scaleY(-1)',
+              }}
+            />
+          </AnimatedBackgroundContainer>
+
           <Button
             onClick={methods.handleAboutDialog}
             sx={{
@@ -324,11 +343,13 @@ const Home: FC<HomeProps> = memo(({ ipAddress }) => {
               fontWeight: 500,
               letterSpacing: 0.5,
               fontSize: { xs: '2rem', sm: '2.25rem' },
+              position: 'relative',
+              zIndex: 1,
             }}
           >
             afriyadi y. r.
           </Typography>
-        </Box>
+        </MainSection>
         <DynamicFabMenu />
         <DynamicPortfolioSection />
       </main>
