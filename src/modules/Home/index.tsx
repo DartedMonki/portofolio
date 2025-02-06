@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  LinearProgress,
   Paper,
   Typography,
   useMediaQuery,
@@ -14,7 +15,7 @@ import {
 import { styled } from '@mui/system';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
-import { type FC, memo, useCallback, useMemo } from 'react';
+import { type FC, memo, useCallback, useEffect, useMemo, useState } from 'react';
 
 import TerrainBackground from '~/src/components/TerrainBackground';
 
@@ -152,6 +153,9 @@ const MainSection = styled('section')({
 });
 
 const Home: FC<HomeProps> = memo(({ ipAddress }) => {
+  const [isTerrainLoaded, setIsTerrainLoaded] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+
   const { data, methods } = useHome({ ipAddress });
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
@@ -173,8 +177,45 @@ const Home: FC<HomeProps> = memo(({ ipAddress }) => {
     [data.openAboutDialog, methods.handleAboutDialog]
   );
 
+  useEffect(() => {
+    let progressInterval: NodeJS.Timeout | undefined;
+
+    if (!isTerrainLoaded) {
+      // Simulate loading progress up to 90%
+      progressInterval = setInterval(() => {
+        setLoadingProgress((prev) => {
+          const remaining = 90 - prev;
+          const increment = Math.max(0.5, remaining * 0.1);
+          return prev + increment > 90 ? 90 : prev + increment;
+        });
+      }, 100);
+    } else {
+      // When terrain is loaded, quickly animate to 100%
+      setLoadingProgress(100);
+    }
+
+    // Cleanup function
+    return () => {
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
+    };
+  }, [isTerrainLoaded]);
+
   return (
     <>
+      {!isTerrainLoaded && (
+        <LinearProgress
+          value={loadingProgress}
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            zIndex: 9999,
+          }}
+        />
+      )}
       <Dialog
         fullScreen={fullScreen}
         maxWidth="md"
@@ -218,7 +259,7 @@ const Home: FC<HomeProps> = memo(({ ipAddress }) => {
         </Box>
 
         <MainSection>
-          <TerrainBackground />
+          <TerrainBackground onLoad={() => setIsTerrainLoaded(true)} />
           <Button
             onClick={methods.handleAboutDialog}
             sx={{
