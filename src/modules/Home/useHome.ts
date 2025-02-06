@@ -59,6 +59,11 @@ const useHome = ({ ipAddress }: HomeProps): UseHomeReturn => {
     (e: KeyboardEvent) => {
       const { key: name, keyCode: code } = e;
 
+      // Prevent space bar from scrolling
+      if (code === 32) {
+        e.preventDefault();
+      }
+
       if ((code > 64 && code < 91) || code === 32) {
         setTypedWord((prev) => [...prev, name]);
       } else if (code === 8) {
