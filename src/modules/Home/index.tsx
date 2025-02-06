@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  LinearProgress,
   Paper,
   Typography,
   useMediaQuery,
@@ -14,7 +15,9 @@ import {
 import { styled } from '@mui/system';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
-import { type FC, memo, useCallback, useMemo } from 'react';
+import { type FC, memo, useCallback, useEffect, useMemo, useState } from 'react';
+
+import TerrainBackground from '~/src/components/TerrainBackground';
 
 import useHome from './useHome';
 
@@ -139,55 +142,6 @@ const AboutDialogContent: FC<AboutDialogContentProps> = memo(
 
 AboutDialogContent.displayName = 'AboutDialogContent';
 
-const AnimatedBackgroundContainer = styled(Box)(() => ({
-  position: 'fixed',
-  top: -30,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  zIndex: -1,
-  opacity: 0,
-  animation: 'fadeIn 1.5s ease-in forwards',
-  '@media (hover: hover)': {
-    transition: 'transform 0.5s ease-out',
-    '&:hover': {
-      transform: 'scale(1.05)',
-    },
-  },
-  '@media (prefers-reduced-motion: no-preference)': {
-    animation: 'fadeIn 1.5s ease-in forwards, float 6s ease-in-out infinite',
-  },
-  '&::after': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    zIndex: 1,
-  },
-  '@keyframes fadeIn': {
-    '0%': {
-      opacity: 0,
-    },
-    '100%': {
-      opacity: 1,
-    },
-  },
-  '@keyframes float': {
-    '0%': {
-      transform: 'translateY(0px)',
-    },
-    '50%': {
-      transform: 'translateY(-30px)',
-    },
-    '100%': {
-      transform: 'translateY(0px)',
-    },
-  },
-}));
-
 const MainSection = styled('section')({
   display: 'flex',
   flexDirection: 'column',
@@ -199,6 +153,9 @@ const MainSection = styled('section')({
 });
 
 const Home: FC<HomeProps> = memo(({ ipAddress }) => {
+  const [isTerrainLoaded, setIsTerrainLoaded] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+
   const { data, methods } = useHome({ ipAddress });
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
@@ -220,8 +177,45 @@ const Home: FC<HomeProps> = memo(({ ipAddress }) => {
     [data.openAboutDialog, methods.handleAboutDialog]
   );
 
+  useEffect(() => {
+    let progressInterval: NodeJS.Timeout | undefined;
+
+    if (!isTerrainLoaded) {
+      // Simulate loading progress up to 90%
+      progressInterval = setInterval(() => {
+        setLoadingProgress((prev) => {
+          const remaining = 90 - prev;
+          const increment = Math.max(0.5, remaining * 0.1);
+          return prev + increment > 90 ? 90 : prev + increment;
+        });
+      }, 100);
+    } else {
+      // When terrain is loaded, quickly animate to 100%
+      setLoadingProgress(100);
+    }
+
+    // Cleanup function
+    return () => {
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
+    };
+  }, [isTerrainLoaded]);
+
   return (
     <>
+      {!isTerrainLoaded && (
+        <LinearProgress
+          value={loadingProgress}
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            zIndex: 9999,
+          }}
+        />
+      )}
       <Dialog
         fullScreen={fullScreen}
         maxWidth="md"
@@ -265,20 +259,7 @@ const Home: FC<HomeProps> = memo(({ ipAddress }) => {
         </Box>
 
         <MainSection>
-          <AnimatedBackgroundContainer>
-            <Image
-              src="/images/main-bg.jpg"
-              alt="Background"
-              fill
-              priority
-              sizes="100vw"
-              style={{
-                objectFit: 'cover',
-                transform: 'scaleY(-1)',
-              }}
-            />
-          </AnimatedBackgroundContainer>
-
+          <TerrainBackground onLoad={() => setIsTerrainLoaded(true)} />
           <Button
             onClick={methods.handleAboutDialog}
             sx={{
