@@ -189,7 +189,7 @@ const STAR_CONFIG = {
   renderDistance: 2, // number of chunks away from camera to keep
   starsPerChunk: 50, // number of stars per chunk
   chunkGenerationBatchSize: 1, // number of star chunks to generate per frame
-  yRange: [3, 10] as [number, number], // vertical range for stars
+  yRange: [5, 10] as [number, number], // vertical range for stars
 };
 
 /**
@@ -419,12 +419,19 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({ onLoad }) => {
       }
       geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
+      // Create texture loader
+      const loader = new THREE.TextureLoader();
+      // Randomly choose between sp1 and sp2 textures
+      const texturePath = Math.random() > 0.5 ? '/images/sp1.png' : '/images/sp2.png';
+
       const material = new THREE.PointsMaterial({
-        color: 0xffffff,
-        size: 0.2,
-        fog: false, // Stars won't be affected by fog
+        size: 0.3, // Increased size for better visibility
+        map: loader.load(texturePath),
         transparent: true,
         opacity: 0.8,
+        fog: false,
+        depthWrite: false, // Better blending
+        blending: THREE.AdditiveBlending, // Creates a glowing effect
       });
 
       const starChunk = new THREE.Points(geometry, material);
