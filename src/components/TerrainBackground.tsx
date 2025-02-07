@@ -2,6 +2,8 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 
+import { randomBetween } from '../utils/number';
+
 /**
  * Generates enhanced Perlin noise for terrain heightmaps using fractional Brownian motion (fBm)
  * Features:
@@ -170,51 +172,25 @@ const TERRAIN_CONFIG = {
   heightScale: 6,
   noiseScale: 0.02,
   fogNear: 15,
-  fogFar: 50,
-  cameraHeight: 5,
-  cameraDistance: 10,
+  fogFar: 100,
+  cameraHeight: 12,
+  cameraDistance: 18,
   moveSpeed: new THREE.Vector3(0.005, 0, 0.003),
   initialChunks: 1,
   chunkGenerationBatchSize: 1,
 } as const;
 
 /**
- * Configuration for falling stars visual effect
- * @property starSize - Radius of each star sphere in world units
- * @property starColor - Color of the star meshes
- * @property velocity - Base direction and speed vector for star movement
- * @property spawnProbability - Chance of spawning a new star each frame (0-1)
- * @property maxStars - Maximum number of stars allowed simultaneously
- * @property speed - Multiplier applied to base velocity
- * @property lifetime - Duration in seconds before a star is removed
- * @property spawnOffset - Spawn position ranges relative to camera position
+ * Star configuration.
+ * Stars will be generated in “chunks” so that we only keep nearby clusters in view.
  */
-const FALLING_STAR_CONFIG = {
-  starSize: 0.05,
-  starColor: new THREE.Color(0xffffff),
-  velocity: new THREE.Vector3(-0.15, -0.08, -0.05),
-  spawnProbability: 0.03,
-  maxStars: 5,
-  speed: 4,
-  lifetime: 5,
-  spawnOffset: {
-    x: { min: 30, max: 50 }, // Spawn range on X axis
-    y: { min: 15, max: 25 }, // Spawn range on Y axis
-    z: { min: -25, max: -10 }, // Spawn range on Z axis
-  },
-} as const;
-
-/**
- * Interface representing a falling star object
- * @property mesh - Three.js mesh for visual representation
- * @property velocity - Current movement vector
- * @property spawnTime - Timestamp when star was created
- */
-interface FallingStar {
-  mesh: THREE.Mesh;
-  velocity: THREE.Vector3;
-  spawnTime: number;
-}
+const STAR_CONFIG = {
+  chunkSize: 50, // size of a star chunk in world units
+  renderDistance: 2, // number of chunks away from camera to keep
+  starsPerChunk: 50, // number of stars per chunk
+  chunkGenerationBatchSize: 1, // number of star chunks to generate per frame
+  yRange: [3, 10] as [number, number], // vertical range for stars
+};
 
 /**
  * Props for TerrainBackground component
@@ -225,9 +201,8 @@ interface TerrainBackgroundProps {
 }
 
 /**
- * Infinite Terrain Background Component
- * Generates and renders an infinite procedural terrain using Three.js,
- * and intermittently spawns falling stars with configurable behavior.
+ * Infinite Terrain Background Component.
+ * Generates and renders an infinite procedural terrain (and stars) using Three.js.
  */
 const TerrainBackground: React.FC<TerrainBackgroundProps> = ({ onLoad }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -241,7 +216,9 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({ onLoad }) => {
   const chunkGenerationQueue = useRef<Array<[number, number]>>([]);
   const generatedChunks = useRef(0);
 
-  const fallingStars = useRef<FallingStar[]>([]);
+  // --- Star management refs ---
+  const starChunkGenerationQueue = useRef<Array<[number, number]>>([]);
+  const starChunks = new Map<string, THREE.Points>();
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -254,7 +231,7 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({ onLoad }) => {
       powerPreference: 'low-power',
     });
 
-    // Pre-compile materials and geometries
+    // Pre-compile materials and geometries for terrain
     const terrainMaterial = new THREE.MeshBasicMaterial({
       wireframe: true,
       color: 0xffffff,
@@ -270,12 +247,16 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({ onLoad }) => {
     scene.fog = new THREE.Fog(0x000000, TERRAIN_CONFIG.fogNear, TERRAIN_CONFIG.fogFar);
 
     camera.position.set(0, TERRAIN_CONFIG.cameraHeight, TERRAIN_CONFIG.cameraDistance);
-    camera.lookAt(0, 0, 0);
+    camera.lookAt(
+      camera.position.x,
+      TERRAIN_CONFIG.cameraHeight * 0.4, // Look slightly downward from higher position
+      camera.position.z - TERRAIN_CONFIG.cameraDistance
+    );
 
     const noiseGenerator = new TerrainNoiseGenerator();
-    const terrainChunks = new Map();
+    const terrainChunks = new Map<string, THREE.Mesh>();
 
-    // Initialize chunk generation queue
+    // Initialize terrain chunk generation queue based on camera position
     const initializeChunkQueue = () => {
       const cameraChunkX = Math.floor(camera.position.x / TERRAIN_CONFIG.chunkSize);
       const cameraChunkZ = Math.floor(camera.position.z / TERRAIN_CONFIG.chunkSize);
@@ -312,10 +293,8 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({ onLoad }) => {
         TERRAIN_CONFIG.segments + 2 * TERRAIN_CONFIG.overlap
       );
 
-      // Pre-allocate typed array for better memory efficiency
-      const positions = new Float32Array(geometry.attributes.position.array);
-
       // Generate heightmap with optimized loop
+      const positions = new Float32Array(geometry.attributes.position.array);
       for (let i = 0; i < positions.length; i += 3) {
         const x = Math.floor(i / 3) % (TERRAIN_CONFIG.segments + 2 * TERRAIN_CONFIG.overlap + 1);
         const z = Math.floor(i / (3 * (TERRAIN_CONFIG.segments + 2 * TERRAIN_CONFIG.overlap + 1)));
@@ -347,7 +326,7 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({ onLoad }) => {
       return chunk;
     };
 
-    // Batch process chunks to distribute generation load
+    // Batch process terrain chunks to distribute generation load
     const generateChunkBatch = () => {
       const batchSize = Math.min(
         TERRAIN_CONFIG.chunkGenerationBatchSize,
@@ -362,7 +341,7 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({ onLoad }) => {
         }
       }
 
-      // Check if we've generated enough chunks to consider the scene ready
+      // Check if we've generated enough terrain chunks to consider the scene ready
       if (!isInitialized && generatedChunks.current >= TERRAIN_CONFIG.initialChunks) {
         setIsInitialized(true);
         onLoad?.();
@@ -370,7 +349,7 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({ onLoad }) => {
     };
 
     /**
-     * Updates visible chunks based on camera position
+     * Updates visible terrain chunks based on camera position
      * - Generates new chunks within render distance
      * - Removes chunks outside render distance
      * - Manages chunk generation queue
@@ -379,7 +358,7 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({ onLoad }) => {
       const cameraChunkX = Math.floor(cameraTargetPosition.current.x / TERRAIN_CONFIG.chunkSize);
       const cameraChunkZ = Math.floor(cameraTargetPosition.current.z / TERRAIN_CONFIG.chunkSize);
 
-      // Queue new chunks for generation
+      // Queue new terrain chunks for generation
       for (
         let x = cameraChunkX - TERRAIN_CONFIG.renderDistance;
         x <= cameraChunkX + TERRAIN_CONFIG.renderDistance;
@@ -400,7 +379,7 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({ onLoad }) => {
         }
       }
 
-      // Remove distant chunks
+      // Remove distant terrain chunks
       terrainChunks.forEach((chunk, key) => {
         const [chunkX, chunkZ] = key.split(',').map(Number);
         if (
@@ -414,87 +393,148 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({ onLoad }) => {
       });
     };
 
+    // --- Star chunk functions ---
+
     /**
-     * Creates a falling star with random spawn position
-     * - Generates sphere mesh for star visualization
-     * - Calculates random spawn position relative to camera
-     * - Initializes star properties and adds to scene
+     * Creates and returns a star chunk (as THREE.Points) at the specified chunk coordinates.
      */
-    const createFallingStar = () => {
-      const currentTime = performance.now() / 1000;
+    const getStarChunk = (chunkX: number, chunkZ: number) => {
+      const chunkKey = `${chunkX},${chunkZ}`;
+      if (starChunks.has(chunkKey)) return starChunks.get(chunkKey);
 
-      // Create star geometry and material
-      const starGeometry = new THREE.SphereGeometry(FALLING_STAR_CONFIG.starSize, 8, 8);
-      const starMaterial = new THREE.MeshBasicMaterial({ color: FALLING_STAR_CONFIG.starColor });
-      const starMesh = new THREE.Mesh(starGeometry, starMaterial);
+      const geometry = new THREE.BufferGeometry();
+      const starCount = STAR_CONFIG.starsPerChunk;
+      const positions = new Float32Array(starCount * 3);
 
-      // Calculate random spawn position within configured ranges
-      const startX =
-        camera.position.x +
-        FALLING_STAR_CONFIG.spawnOffset.x.min +
-        Math.random() *
-          (FALLING_STAR_CONFIG.spawnOffset.x.max - FALLING_STAR_CONFIG.spawnOffset.x.min);
-      const startY =
-        camera.position.y +
-        FALLING_STAR_CONFIG.spawnOffset.y.min +
-        Math.random() *
-          (FALLING_STAR_CONFIG.spawnOffset.y.max - FALLING_STAR_CONFIG.spawnOffset.y.min);
-      const startZ =
-        camera.position.z +
-        FALLING_STAR_CONFIG.spawnOffset.z.min +
-        Math.random() *
-          (FALLING_STAR_CONFIG.spawnOffset.z.max - FALLING_STAR_CONFIG.spawnOffset.z.min);
+      // Generate stars at random positions within the chunk
+      for (let i = 0; i < starCount; i++) {
+        const offsetX = randomBetween(0, STAR_CONFIG.chunkSize);
+        const offsetZ = randomBetween(0, STAR_CONFIG.chunkSize);
+        const worldX = chunkX * STAR_CONFIG.chunkSize + offsetX;
+        const worldZ = chunkZ * STAR_CONFIG.chunkSize + offsetZ;
+        const worldY = randomBetween(STAR_CONFIG.yRange[0], STAR_CONFIG.yRange[1]);
+        positions[i * 3] = worldX;
+        positions[i * 3 + 1] = worldY;
+        positions[i * 3 + 2] = worldZ;
+      }
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
-      // Position star and add to scene
-      starMesh.position.set(startX, startY, startZ);
-      scene.add(starMesh);
+      const material = new THREE.PointsMaterial({
+        color: 0xffffff,
+        size: 0.2,
+        fog: false, // Stars won't be affected by fog
+        transparent: true,
+        opacity: 0.8,
+      });
 
-      // Create star object with initialized properties
-      const star: FallingStar = {
-        mesh: starMesh,
-        velocity: FALLING_STAR_CONFIG.velocity.clone().multiplyScalar(FALLING_STAR_CONFIG.speed),
-        spawnTime: currentTime,
-      };
-
-      fallingStars.current.push(star);
+      const starChunk = new THREE.Points(geometry, material);
+      scene.add(starChunk);
+      starChunks.set(chunkKey, starChunk);
+      return starChunk;
     };
 
     /**
-     * Updates positions of all active falling stars
-     * - Moves stars according to their velocity
-     * - Removes stars that exceed their lifetime
-     * - Cleans up Three.js resources for removed stars
+     * Initialize the star chunk generation queue based on camera position.
      */
-    const updateFallingStars = () => {
-      const currentTime = performance.now() / 1000;
+    const initializeStarChunkQueue = () => {
+      const cameraStarChunkX = Math.floor(camera.position.x / STAR_CONFIG.chunkSize);
+      const cameraStarChunkZ = Math.floor(camera.position.z / STAR_CONFIG.chunkSize);
 
-      fallingStars.current.forEach((star, index) => {
-        star.mesh.position.add(star.velocity);
+      for (
+        let x = cameraStarChunkX - STAR_CONFIG.renderDistance;
+        x <= cameraStarChunkX + STAR_CONFIG.renderDistance;
+        x++
+      ) {
+        for (
+          let z = cameraStarChunkZ - STAR_CONFIG.renderDistance;
+          z <= cameraStarChunkZ + STAR_CONFIG.renderDistance;
+          z++
+        ) {
+          starChunkGenerationQueue.current.push([x, z]);
+        }
+      }
+    };
 
-        // Remove star if lifetime exceeded
-        if (currentTime - star.spawnTime > FALLING_STAR_CONFIG.lifetime) {
-          scene.remove(star.mesh);
-          star.mesh.geometry.dispose();
-          fallingStars.current.splice(index, 1);
+    /**
+     * Batch process star chunks to distribute generation load.
+     */
+    const generateStarChunkBatch = () => {
+      const batchSize = Math.min(
+        STAR_CONFIG.chunkGenerationBatchSize,
+        starChunkGenerationQueue.current.length
+      );
+
+      for (let i = 0; i < batchSize; i++) {
+        const nextChunk = starChunkGenerationQueue.current.shift();
+        if (nextChunk) {
+          const [x, z] = nextChunk;
+          getStarChunk(x, z);
+        }
+      }
+    };
+
+    /**
+     * Updates visible star chunks based on camera position.
+     */
+    const updateVisibleStarChunks = () => {
+      const cameraChunkX = Math.floor(cameraTargetPosition.current.x / STAR_CONFIG.chunkSize);
+      const cameraChunkZ = Math.floor(cameraTargetPosition.current.z / STAR_CONFIG.chunkSize);
+
+      // Queue new star chunks for generation
+      for (
+        let x = cameraChunkX - STAR_CONFIG.renderDistance;
+        x <= cameraChunkX + STAR_CONFIG.renderDistance;
+        x++
+      ) {
+        for (
+          let z = cameraChunkZ - STAR_CONFIG.renderDistance;
+          z <= cameraChunkZ + STAR_CONFIG.renderDistance;
+          z++
+        ) {
+          const chunkKey = `${x},${z}`;
+          if (
+            !starChunks.has(chunkKey) &&
+            !starChunkGenerationQueue.current.some(([cx, cz]) => cx === x && cz === z)
+          ) {
+            starChunkGenerationQueue.current.push([x, z]);
+          }
+        }
+      }
+
+      // Remove star chunks that are too far away
+      starChunks.forEach((starChunk, key) => {
+        const [chunkX, chunkZ] = key.split(',').map(Number);
+        if (
+          Math.abs(chunkX - cameraChunkX) > STAR_CONFIG.renderDistance ||
+          Math.abs(chunkZ - cameraChunkZ) > STAR_CONFIG.renderDistance
+        ) {
+          scene.remove(starChunk);
+          // Dispose of geometry and material
+          starChunk.geometry.dispose();
+          if (Array.isArray(starChunk.material)) {
+            starChunk.material.forEach((m) => m.dispose());
+          } else {
+            starChunk.material.dispose();
+          }
+          starChunks.delete(key);
         }
       });
     };
 
+    // Add an initial call to queue star chunks
+    initializeStarChunkQueue();
+
+    /**
+     * Animation loop.
+     */
     const animate = () => {
       // Generate chunks in batches
       if (chunkGenerationQueue.current.length > 0) {
         generateChunkBatch();
       }
-
-      // Check if new star should be spawned
-      if (
-        fallingStars.current.length < FALLING_STAR_CONFIG.maxStars &&
-        Math.random() < FALLING_STAR_CONFIG.spawnProbability
-      ) {
-        createFallingStar();
+      if (starChunkGenerationQueue.current.length > 0) {
+        generateStarChunkBatch();
       }
-
-      updateFallingStars();
 
       // Use lerp for smooth camera movement
       currentSpeed.current.lerp(TERRAIN_CONFIG.moveSpeed, 0.02);
@@ -502,6 +542,7 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({ onLoad }) => {
       camera.position.lerp(cameraTargetPosition.current, 0.05);
       camera.lookAt(camera.position.x, 0, camera.position.z - TERRAIN_CONFIG.cameraDistance);
 
+      // If camera has moved enough, update visible chunks for both terrain and stars
       if (
         Math.abs(cameraTargetPosition.current.x - lastChunkUpdatePosition.current.x) >
           TERRAIN_CONFIG.updateThreshold ||
@@ -509,6 +550,7 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({ onLoad }) => {
           TERRAIN_CONFIG.updateThreshold
       ) {
         updateVisibleChunks();
+        updateVisibleStarChunks();
         lastChunkUpdatePosition.current.copy(cameraTargetPosition.current);
       }
 
@@ -524,7 +566,7 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({ onLoad }) => {
 
     window.addEventListener('resize', handleResize);
 
-    // Initialize chunk generation queue before starting animation
+    // Initialize terrain and star chunk generation queues before starting animation
     initializeChunkQueue();
     animate();
 
@@ -536,17 +578,25 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({ onLoad }) => {
       }
       containerRef.current?.removeChild(renderer.domElement);
 
-      // Dispose of Three.js resources
+      // Dispose of terrain chunks
       terrainChunks.forEach((chunk) => {
         chunk.geometry.dispose();
         scene.remove(chunk);
       });
       terrainMaterial.dispose();
-      renderer.dispose();
-      fallingStars.current.forEach(({ mesh }) => {
-        mesh.geometry.dispose();
-        scene.remove(mesh);
+
+      // Dispose of star chunks
+      starChunks.forEach((starChunk) => {
+        starChunk.geometry.dispose();
+        if (Array.isArray(starChunk.material)) {
+          starChunk.material.forEach((m) => m.dispose());
+        } else {
+          starChunk.material.dispose();
+        }
+        scene.remove(starChunk);
       });
+
+      renderer.dispose();
     };
   }, []);
 
