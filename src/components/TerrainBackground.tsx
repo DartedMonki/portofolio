@@ -326,16 +326,11 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
   const generatedChunks = useRef(0);
   const [localSettingsOpen, setLocalSettingsOpen] = useState(settingsOpen);
 
-  // Track the last time we rendered a frame for fps limiting
-  const lastFrameTime = useRef<number | null>(null);
-  // Track previous chunk positions to avoid unnecessary updates
+  // Track previous chunk positions for reference
   const lastChunkX = useRef<number>(0);
   const lastChunkZ = useRef<number>(0);
   const lastStarChunkX = useRef<number>(0);
   const lastStarChunkZ = useRef<number>(0);
-  // Track if camera is moving to avoid unnecessary renders
-  const isMoving = useRef<boolean>(true);
-  const hasQueuedChunks = useRef<boolean>(true);
 
   // State for terrain and star settings
   const [terrainConfig, setTerrainConfig] = useState<TerrainConfig>({ ...DEFAULT_TERRAIN_CONFIG });
@@ -367,18 +362,6 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
       setDevicePixelRatio(window.devicePixelRatio || 1);
     }
   }, [isBrowser]);
-
-  // Create a simple debounce function
-  function debounce<T extends (...args: any[]) => void>(fn: T, delay: number) {
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    return function (this: any, ...args: Parameters<T>) {
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => {
-        fn.apply(this, args);
-        timer = null;
-      }, delay);
-    };
-  }
 
   // Save preferences when they change
   const savePreferences = (configToSave?: {
@@ -638,7 +621,7 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
      */
     const getChunkKey = (x: number, z: number): string => `${x},${z}`;
 
-    // Initialize terrain chunk generation queue based on camera position - O(renderDistance²)
+    // Initialize terrain chunk generation queue based on camera position
     const initializeChunkQueue = () => {
       const cameraChunkX = Math.floor(camera.position.x / terrainConfig.chunkSize);
       const cameraChunkZ = Math.floor(camera.position.z / terrainConfig.chunkSize);
@@ -647,57 +630,24 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
       chunkGenerationQueue.current = [];
       pendingChunks.clear();
 
-      // Prioritize chunks closer to the camera first by using a spiral pattern
-      const spiralOrder = generateSpiralOrder(terrainConfig.renderDistance);
-
-      // Use spiral pattern for better visual loading
-      for (const [offsetX, offsetZ] of spiralOrder) {
-        const x = cameraChunkX + offsetX;
-        const z = cameraChunkZ + offsetZ;
-        const chunkKey = getChunkKey(x, z);
-
-        // Only add chunk if not already in generation queue or already generated
-        if (!terrainChunks.has(chunkKey) && !pendingChunks.has(chunkKey)) {
-          chunkGenerationQueue.current.push([x, z]);
-          pendingChunks.add(chunkKey);
+      // Use simple rectangular pattern for chunk initialization
+      for (
+        let x = cameraChunkX - terrainConfig.renderDistance;
+        x <= cameraChunkX + terrainConfig.renderDistance;
+        x++
+      ) {
+        for (
+          let z = cameraChunkZ - terrainConfig.renderDistance;
+          z <= cameraChunkZ + terrainConfig.renderDistance;
+          z++
+        ) {
+          const chunkKey = getChunkKey(x, z);
+          if (!terrainChunks.has(chunkKey)) {
+            chunkGenerationQueue.current.push([x, z]);
+            pendingChunks.add(chunkKey);
+          }
         }
       }
-    };
-
-    /**
-     * Creates a spiral pattern from center out to renderDistance
-     * This improves visual loading by rendering closer chunks first
-     */
-    const generateSpiralOrder = (renderDistance: number): Array<[number, number]> => {
-      const result: Array<[number, number]> = [];
-
-      // Add center point first
-      result.push([0, 0]);
-
-      // Generate the spiral outward
-      for (let layer = 1; layer <= renderDistance; layer++) {
-        // Top edge (left to right)
-        for (let x = -layer; x <= layer; x++) {
-          result.push([x, -layer]);
-        }
-
-        // Right edge (top to bottom)
-        for (let z = -layer + 1; z <= layer; z++) {
-          result.push([layer, z]);
-        }
-
-        // Bottom edge (right to left)
-        for (let x = layer - 1; x >= -layer; x--) {
-          result.push([x, layer]);
-        }
-
-        // Left edge (bottom to top)
-        for (let z = layer - 1; z >= -layer + 1; z--) {
-          result.push([-layer, z]);
-        }
-      }
-
-      return result;
     };
 
     /**
@@ -799,50 +749,43 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
       const cameraChunkX = Math.floor(cameraTargetPosition.current.x / terrainConfig.chunkSize);
       const cameraChunkZ = Math.floor(cameraTargetPosition.current.z / terrainConfig.chunkSize);
 
-      // Pre-calculate required chunks within render distance - O(renderDistance²)
-      const requiredChunks = new Set<string>();
-      const renderDistanceSq = terrainConfig.renderDistance * terrainConfig.renderDistance;
-
-      // First identify all required chunks using a more efficient distance check
+      // Queue new terrain chunks for generation
       for (
-        let offsetX = -terrainConfig.renderDistance;
-        offsetX <= terrainConfig.renderDistance;
-        offsetX++
+        let x = cameraChunkX - terrainConfig.renderDistance;
+        x <= cameraChunkX + terrainConfig.renderDistance;
+        x++
       ) {
         for (
-          let offsetZ = -terrainConfig.renderDistance;
-          offsetZ <= terrainConfig.renderDistance;
-          offsetZ++
+          let z = cameraChunkZ - terrainConfig.renderDistance;
+          z <= cameraChunkZ + terrainConfig.renderDistance;
+          z++
         ) {
-          // Use squared distance for faster comparison
-          const distanceSq = offsetX * offsetX + offsetZ * offsetZ;
-
-          // Only keep chunks within circular render distance (no corner chunks)
-          if (distanceSq <= renderDistanceSq) {
-            const x = cameraChunkX + offsetX;
-            const z = cameraChunkZ + offsetZ;
-            const chunkKey = getChunkKey(x, z);
-            requiredChunks.add(chunkKey);
-
-            // If chunk doesn't exist and isn't already pending, add it to generation queue
-            if (!terrainChunks.has(chunkKey) && !pendingChunks.has(chunkKey)) {
-              chunkGenerationQueue.current.push([x, z]);
-              pendingChunks.add(chunkKey);
-            }
+          const chunkKey = getChunkKey(x, z);
+          if (
+            !terrainChunks.has(chunkKey) &&
+            !chunkGenerationQueue.current.some(([cx, cz]) => cx === x && cz === z) &&
+            !pendingChunks.has(chunkKey)
+          ) {
+            chunkGenerationQueue.current.push([x, z]);
+            pendingChunks.add(chunkKey);
           }
         }
       }
 
-      // Remove chunks that are no longer within render distance - O(n) where n is active chunks
+      // Remove distant terrain chunks
       terrainChunks.forEach((chunk, key) => {
-        if (!requiredChunks.has(key)) {
+        const [chunkX, chunkZ] = key.split(',').map(Number);
+        if (
+          Math.abs(chunkX - cameraChunkX) > terrainConfig.renderDistance ||
+          Math.abs(chunkZ - cameraChunkZ) > terrainConfig.renderDistance
+        ) {
           scene.remove(chunk);
           terrainChunks.delete(key);
           chunk.geometry.dispose();
         }
       });
 
-      // Periodically clear the noise cache if it becomes too large (every 10 chunk updates)
+      // Periodically clear the noise cache if it becomes too large
       if (generatedChunks.current % 10 === 0 && noiseGenerator.noiseCache.size > 5000) {
         noiseGenerator.clearCache();
       }
@@ -929,20 +872,22 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
 
       // Clear existing queue
       starChunkGenerationQueue.current = [];
-      const pendingStarChunks = new Set<string>();
 
-      // Use the same spiral pattern as terrain chunks for better visual loading
-      const spiralOrder = generateSpiralOrder(starConfig.renderDistance);
-
-      for (const [offsetX, offsetZ] of spiralOrder) {
-        const x = cameraStarChunkX + offsetX;
-        const z = cameraStarChunkZ + offsetZ;
-        const chunkKey = getChunkKey(x, z);
-
-        // Only add if not already in queue or generated
-        if (!starChunksMap.current.has(chunkKey) && !pendingStarChunks.has(chunkKey)) {
-          starChunkGenerationQueue.current.push([x, z]);
-          pendingStarChunks.add(chunkKey);
+      // Use simple rectangular pattern for chunk initialization
+      for (
+        let x = cameraStarChunkX - starConfig.renderDistance;
+        x <= cameraStarChunkX + starConfig.renderDistance;
+        x++
+      ) {
+        for (
+          let z = cameraStarChunkZ - starConfig.renderDistance;
+          z <= cameraStarChunkZ + starConfig.renderDistance;
+          z++
+        ) {
+          const chunkKey = getChunkKey(x, z);
+          if (!starChunksMap.current.has(chunkKey)) {
+            starChunkGenerationQueue.current.push([x, z]);
+          }
         }
       }
     };
@@ -974,85 +919,53 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
       const cameraChunkX = Math.floor(cameraTargetPosition.current.x / starConfig.chunkSize);
       const cameraChunkZ = Math.floor(cameraTargetPosition.current.z / starConfig.chunkSize);
 
-      // Track required chunks with a Set for O(1) lookups
-      const requiredStarChunks = new Set<string>();
-      const renderDistanceSq = starConfig.renderDistance * starConfig.renderDistance;
-      const pendingStarChunks = new Set<string>();
-
-      // Identify all required chunks within render distance
+      // Queue new star chunks for generation
       for (
-        let offsetX = -starConfig.renderDistance;
-        offsetX <= starConfig.renderDistance;
-        offsetX++
+        let x = cameraChunkX - starConfig.renderDistance;
+        x <= cameraChunkX + starConfig.renderDistance;
+        x++
       ) {
         for (
-          let offsetZ = -starConfig.renderDistance;
-          offsetZ <= starConfig.renderDistance;
-          offsetZ++
+          let z = cameraChunkZ - starConfig.renderDistance;
+          z <= cameraChunkZ + starConfig.renderDistance;
+          z++
         ) {
-          // Use squared distance for faster comparison (avoid sqrt)
-          const distanceSq = offsetX * offsetX + offsetZ * offsetZ;
-
-          // Use circular distance check to avoid corner chunks
-          if (distanceSq <= renderDistanceSq) {
-            const x = cameraChunkX + offsetX;
-            const z = cameraChunkZ + offsetZ;
-            const chunkKey = getChunkKey(x, z);
-            requiredStarChunks.add(chunkKey);
-
-            // Add to generation queue if not present and not pending
-            if (
-              !starChunksMap.current.has(chunkKey) &&
-              !starChunkGenerationQueue.current.some(
-                ([cx, cz]) => getChunkKey(cx, cz) === chunkKey
-              ) &&
-              !pendingStarChunks.has(chunkKey)
-            ) {
-              starChunkGenerationQueue.current.push([x, z]);
-              pendingStarChunks.add(chunkKey);
-            }
+          const chunkKey = getChunkKey(x, z);
+          if (
+            !starChunksMap.current.has(chunkKey) &&
+            !starChunkGenerationQueue.current.some(([cx, cz]) => cx === x && cz === z)
+          ) {
+            starChunkGenerationQueue.current.push([x, z]);
           }
         }
       }
 
-      // Remove star chunks that are too far away - O(n) where n is active chunks
+      // Remove star chunks that are too far away
       starChunksMap.current.forEach((starChunk, key) => {
-        if (!requiredStarChunks.has(key)) {
+        const [chunkX, chunkZ] = key.split(',').map(Number);
+        if (
+          Math.abs(chunkX - cameraChunkX) > starConfig.renderDistance ||
+          Math.abs(chunkZ - cameraChunkZ) > starConfig.renderDistance
+        ) {
           scene.remove(starChunk);
-          // Dispose of geometry and material
           starChunk.geometry.dispose();
-
-          // Only dispose material if not shared
-          if (
-            !textureCache.has((starChunk.material as THREE.PointsMaterial).map?.source?.data?.src)
-          ) {
-            if (Array.isArray(starChunk.material)) {
-              starChunk.material.forEach((m) => m.dispose());
-            } else {
-              starChunk.material.dispose();
-            }
+          if (Array.isArray(starChunk.material)) {
+            starChunk.material.forEach((m) => m.dispose());
+          } else {
+            starChunk.material.dispose();
           }
-
           starChunksMap.current.delete(key);
         }
       });
     };
 
-    // Target 30fps for better performance (33.33ms per frame)
-    const frameInterval = 1000 / 30;
-
     const handleResize = () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
-
-      // Force a render when window is resized
-      isMoving.current = true;
     };
 
-    // Add debouncing to resize handler for better performance
-    const debouncedResize = debounce(handleResize, 100);
-    window.addEventListener('resize', debouncedResize);
+    window.addEventListener('resize', handleResize);
 
     // Initialize terrain and star chunk generation queues before starting animation
     initializeChunkQueue();
@@ -1062,16 +975,6 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
      * Animation loop with frame rate limiting and performance optimizations.
      */
     const animate = () => {
-      // Use requestAnimationFrame for timing
-      animationFrameRef.current = requestAnimationFrame(animate);
-
-      // Implement frame rate limiting for consistent performance
-      const now = performance.now();
-      if (lastFrameTime.current && now - lastFrameTime.current < frameInterval) {
-        return; // Skip this frame to maintain target framerate
-      }
-      lastFrameTime.current = now;
-
       // Generate chunks in batches with prioritization
       if (chunkGenerationQueue.current.length > 0) {
         generateChunkBatch();
@@ -1091,49 +994,28 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
       const dz = Math.abs(cameraTargetPosition.current.z - lastChunkUpdatePosition.current.z);
 
       if (dx > terrainConfig.updateThreshold || dz > terrainConfig.updateThreshold) {
-        // Calculate chunk coordinates just once
-        const cameraChunkX = Math.floor(cameraTargetPosition.current.x / terrainConfig.chunkSize);
-        const cameraChunkZ = Math.floor(cameraTargetPosition.current.z / terrainConfig.chunkSize);
+        // Update visible chunks for both terrain and stars
+        updateVisibleChunks();
+        updateVisibleStarChunks();
 
         // Update camera position tracker
         lastChunkUpdatePosition.current.copy(cameraTargetPosition.current);
 
-        // Check if star chunks need to be refreshed (less frequently than terrain chunks)
-        const starChunkX = Math.floor(cameraTargetPosition.current.x / starConfig.chunkSize);
-        const starChunkZ = Math.floor(cameraTargetPosition.current.z / starConfig.chunkSize);
-
-        // Only update visible chunks if camera has crossed chunk boundaries
-        if (cameraChunkX !== lastChunkX.current || cameraChunkZ !== lastChunkZ.current) {
-          updateVisibleChunks();
-          lastChunkX.current = cameraChunkX;
-          lastChunkZ.current = cameraChunkZ;
-        }
-
-        // Only update visible star chunks if camera has crossed star chunk boundaries
-        if (starChunkX !== lastStarChunkX.current || starChunkZ !== lastStarChunkZ.current) {
-          updateVisibleStarChunks();
-          lastStarChunkX.current = starChunkX;
-          lastStarChunkZ.current = starChunkZ;
-        }
+        // Update tracking variables for optimization
+        lastChunkX.current = Math.floor(cameraTargetPosition.current.x / terrainConfig.chunkSize);
+        lastChunkZ.current = Math.floor(cameraTargetPosition.current.z / terrainConfig.chunkSize);
+        lastStarChunkX.current = Math.floor(cameraTargetPosition.current.x / starConfig.chunkSize);
+        lastStarChunkZ.current = Math.floor(cameraTargetPosition.current.z / starConfig.chunkSize);
       }
 
-      // Only render if there are pending changes or camera is moving
-      if (isMoving.current || hasQueuedChunks.current) {
-        renderer.render(scene, camera);
-      }
+      // Always render every frame to ensure smooth animation
+      renderer.render(scene, camera);
 
-      // Update state tracking
-      isMoving.current =
-        dx > 0.01 ||
-        dz > 0.01 ||
-        Math.abs(camera.position.y - cameraTargetPosition.current.y) > 0.01;
-
-      hasQueuedChunks.current =
-        chunkGenerationQueue.current.length > 0 || starChunkGenerationQueue.current.length > 0;
+      // Schedule the next frame at the end of the function
+      animationFrameRef.current = requestAnimationFrame(animate);
     };
 
     // Start the animation loop
-    lastFrameTime.current = performance.now();
     animate();
 
     // Function to restart the terrain rendering with new settings
@@ -1196,7 +1078,7 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
 
     // Cleanup function to prevent memory leaks
     return () => {
-      window.removeEventListener('resize', debouncedResize);
+      window.removeEventListener('resize', handleResize);
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
