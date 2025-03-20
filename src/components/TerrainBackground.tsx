@@ -302,6 +302,8 @@ interface TerrainBackgroundProps {
   onLoad?: () => void;
   settingsOpen?: boolean;
   onSettingsOpenChange?: (open: boolean) => void;
+  'aria-label'?: string;
+  'aria-hidden'?: boolean;
 }
 
 /**
@@ -312,6 +314,8 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
   onLoad,
   settingsOpen = false,
   onSettingsOpenChange,
+  'aria-label': ariaLabel = 'Interactive 3D terrain background',
+  'aria-hidden': ariaHidden = false,
 }) => {
   const { enqueueSnackbar } = useSnackbar();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1170,6 +1174,22 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
     }
   };
 
+  // Handle keyboard navigation for the settings drawer
+  const handleSettingsKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      handleSettingsOpenChange(false);
+      // Return focus to the settings button when drawer closes
+      setTimeout(() => {
+        const settingsButton = document.getElementById(
+          'terrain-settings-button'
+        ) as HTMLButtonElement;
+        if (settingsButton) {
+          settingsButton.focus();
+        }
+      }, 50);
+    }
+  };
+
   return (
     <>
       <div
@@ -1182,6 +1202,9 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
           height: '100%',
           zIndex: -1,
         }}
+        aria-label={ariaLabel}
+        aria-hidden={ariaHidden}
+        role="region"
       >
         {!isInitialized && (
           <div
@@ -1194,6 +1217,8 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
               backgroundColor: '#000',
               zIndex: 1,
             }}
+            aria-label="Loading terrain background"
+            role="presentation"
           />
         )}
         <div
@@ -1206,6 +1231,7 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
             backgroundColor: 'rgba(0, 0, 0, 0.4)',
             pointerEvents: 'none',
           }}
+          aria-hidden="true"
         />
       </div>
 
@@ -1217,14 +1243,24 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
         PaperProps={{
           sx: {
             width: { xs: '80%', sm: 350 },
-            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            backgroundColor: 'rgba(0, 0, 0, 0.95)',
             color: 'white',
             padding: 3,
           },
         }}
+        aria-labelledby="terrain-settings-title"
+        id="terrain-settings-panel"
+        onKeyDown={handleSettingsKeyDown}
       >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h5" sx={{ fontWeight: 'medium' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 3,
+          }}
+        >
+          <Typography variant="h5" sx={{ fontWeight: 'medium' }} id="terrain-settings-title">
             Terrain Settings
           </Typography>
           <Button
@@ -1244,7 +1280,8 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
                 currentQuality: 'medium',
               });
             }}
-            sx={{ borderColor: 'rgba(255,77,77,0.5)', color: '#ff6666' }}
+            sx={{ borderColor: 'rgba(255,77,77,0.7)', color: '#ff9999' }}
+            aria-label="Reset to default settings"
           >
             Reset
           </Button>
@@ -1252,7 +1289,7 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
 
         {/* Quality presets */}
         <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle1" sx={{ mb: 1 }}>
+          <Typography variant="subtitle1" sx={{ mb: 1 }} id="quality-preset-label">
             Quality Preset
           </Typography>
           <Box
@@ -1262,6 +1299,8 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
               flexWrap: 'wrap',
               justifyContent: 'space-between',
             }}
+            role="radiogroup"
+            aria-labelledby="quality-preset-label"
           >
             {Object.keys(QUALITY_PRESETS).map((preset) => (
               <Button
@@ -1279,6 +1318,9 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
                     backgroundColor: '#304FFE',
                   },
                 }}
+                role="radio"
+                aria-checked={currentQuality === preset}
+                aria-label={`${preset} quality`}
               >
                 {preset}
               </Button>
@@ -1286,7 +1328,7 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
           </Box>
 
           {needsRestart && (
-            <Box sx={{ mt: 1, p: 1, bgcolor: 'rgba(255,255,0,0.2)', borderRadius: 1 }}>
+            <Box sx={{ mt: 1, p: 1, bgcolor: 'rgba(255,255,0,0.2)', borderRadius: 1 }} role="alert">
               <Typography variant="caption" sx={{ color: 'yellow', display: 'block', mb: 1 }}>
                 Some changes require restarting the terrain renderer.
               </Typography>
@@ -1307,6 +1349,7 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
                     backgroundColor: 'rgba(255, 255, 0, 0.7)',
                   },
                 }}
+                aria-label="Apply changes and restart renderer"
               >
                 Apply & Restart Renderer
               </Button>
@@ -1316,7 +1359,7 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
 
         {/* Rendering settings */}
         <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle1" sx={{ mb: 1 }}>
+          <Typography variant="subtitle1" sx={{ mb: 1 }} id="rendering-settings-label">
             Rendering
           </Typography>
           <FormControlLabel
@@ -1325,12 +1368,16 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
                 checked={terrainConfig.antialias}
                 onChange={(e) => handleTerrainConfigChange('antialias', e.target.checked)}
                 color="primary"
+                inputProps={{
+                  'aria-labelledby': 'antialias-label',
+                }}
               />
             }
             label="Anti-aliasing"
+            id="antialias-label"
           />
           <Box sx={{ mt: 1 }}>
-            <Typography variant="body2" gutterBottom>
+            <Typography variant="body2" gutterBottom id="terrain-detail-label">
               Terrain Detail
             </Typography>
             <Slider
@@ -1341,10 +1388,11 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
               step={5}
               valueLabelDisplay="auto"
               sx={{ color: 'white' }}
+              aria-labelledby="terrain-detail-label"
             />
           </Box>
           <Box sx={{ mt: 1 }}>
-            <Typography variant="body2" gutterBottom>
+            <Typography variant="body2" gutterBottom id="render-distance-label">
               Render Distance
             </Typography>
             <Slider
@@ -1355,10 +1403,11 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
               step={1}
               valueLabelDisplay="auto"
               sx={{ color: 'white' }}
+              aria-labelledby="render-distance-label"
             />
           </Box>
           <Box sx={{ mt: 1 }}>
-            <Typography variant="body2" gutterBottom>
+            <Typography variant="body2" gutterBottom id="pixel-ratio-label">
               Pixel Ratio
             </Typography>
             <Slider
@@ -1374,13 +1423,14 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
                 { value: Math.min(2, devicePixelRatio), label: 'High' },
               ]}
               sx={{ color: 'white' }}
+              aria-labelledby="pixel-ratio-label"
             />
           </Box>
         </Box>
 
         {/* Wireframe settings */}
         <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle1" sx={{ mb: 1 }}>
+          <Typography variant="subtitle1" sx={{ mb: 1 }} id="wireframe-settings-label">
             Wireframe
           </Typography>
           <FormControlLabel
@@ -1389,12 +1439,16 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
                 checked={terrainConfig.wireframe}
                 onChange={(e) => handleTerrainConfigChange('wireframe', e.target.checked)}
                 color="primary"
+                inputProps={{
+                  'aria-labelledby': 'wireframe-enable-label',
+                }}
               />
             }
             label="Enable Wireframe"
+            id="wireframe-enable-label"
           />
           <Box sx={{ mt: 1 }}>
-            <Typography variant="body2" gutterBottom>
+            <Typography variant="body2" gutterBottom id="wireframe-opacity-label">
               Wireframe Opacity
             </Typography>
             <Slider
@@ -1405,17 +1459,19 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
               step={0.1}
               valueLabelDisplay="auto"
               sx={{ color: 'white' }}
+              aria-labelledby="wireframe-opacity-label"
+              disabled={!terrainConfig.wireframe}
             />
           </Box>
         </Box>
 
         {/* Terrain shape settings */}
         <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle1" sx={{ mb: 1 }}>
+          <Typography variant="subtitle1" sx={{ mb: 1 }} id="terrain-shape-label">
             Terrain Shape
           </Typography>
           <Box sx={{ mt: 1 }}>
-            <Typography variant="body2" gutterBottom>
+            <Typography variant="body2" gutterBottom id="height-scale-label">
               Height Scale
             </Typography>
             <Slider
@@ -1426,10 +1482,11 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
               step={1}
               valueLabelDisplay="auto"
               sx={{ color: 'white' }}
+              aria-labelledby="height-scale-label"
             />
           </Box>
           <Box sx={{ mt: 1 }}>
-            <Typography variant="body2" gutterBottom>
+            <Typography variant="body2" gutterBottom id="noise-scale-label">
               Noise Scale
             </Typography>
             <Slider
@@ -1440,13 +1497,14 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
               step={0.005}
               valueLabelDisplay="auto"
               sx={{ color: 'white' }}
+              aria-labelledby="noise-scale-label"
             />
           </Box>
         </Box>
 
         {/* Star settings */}
         <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle1" sx={{ mb: 1 }}>
+          <Typography variant="subtitle1" sx={{ mb: 1 }} id="star-settings-label">
             Stars
           </Typography>
           <FormControlLabel
@@ -1455,12 +1513,16 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
                 checked={starConfig.enabled}
                 onChange={(e) => handleStarConfigChange('enabled', e.target.checked)}
                 color="primary"
+                inputProps={{
+                  'aria-labelledby': 'show-stars-label',
+                }}
               />
             }
             label="Show Stars"
+            id="show-stars-label"
           />
           <Box sx={{ mt: 1 }}>
-            <Typography variant="body2" gutterBottom>
+            <Typography variant="body2" gutterBottom id="star-size-label">
               Star Size
             </Typography>
             <Slider
@@ -1472,10 +1534,11 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
               valueLabelDisplay="auto"
               disabled={!starConfig.enabled}
               sx={{ color: 'white' }}
+              aria-labelledby="star-size-label"
             />
           </Box>
           <Box sx={{ mt: 1 }}>
-            <Typography variant="body2" gutterBottom>
+            <Typography variant="body2" gutterBottom id="star-opacity-label">
               Star Opacity
             </Typography>
             <Slider
@@ -1487,10 +1550,11 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
               valueLabelDisplay="auto"
               disabled={!starConfig.enabled}
               sx={{ color: 'white' }}
+              aria-labelledby="star-opacity-label"
             />
           </Box>
           <Box sx={{ mt: 1 }}>
-            <Typography variant="body2" gutterBottom>
+            <Typography variant="body2" gutterBottom id="stars-per-chunk-label">
               Stars Per Chunk
             </Typography>
             <Slider
@@ -1502,17 +1566,20 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
               valueLabelDisplay="auto"
               disabled={!starConfig.enabled}
               sx={{ color: 'white' }}
+              aria-labelledby="stars-per-chunk-label"
             />
           </Box>
         </Box>
 
         {/* Add Terrain Color control */}
         <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle1" sx={{ mb: 1 }}>
+          <Typography variant="subtitle1" sx={{ mb: 1 }} id="appearance-settings-label">
             Appearance
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-            <Typography variant="body2">Terrain Color</Typography>
+            <Typography variant="body2" id="terrain-color-label">
+              Terrain Color
+            </Typography>
             <Box
               component="input"
               type="color"
@@ -1534,13 +1601,14 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
                   border: 'none',
                 },
               }}
+              aria-labelledby="terrain-color-label"
             />
           </Box>
         </Box>
 
         {/* Add Camera settings */}
         <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle1" sx={{ mb: 1 }}>
+          <Typography variant="subtitle1" sx={{ mb: 1 }} id="camera-settings-label">
             Camera
           </Typography>
 
@@ -1555,6 +1623,8 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
               borderRadius: 1,
               backgroundColor: 'rgba(255, 255, 255, 0.1)',
             }}
+            role="note"
+            aria-live="polite"
           >
             <Typography variant="caption" color="rgba(255, 255, 255, 0.7)">
               Camera settings will not be saved between sessions
@@ -1562,7 +1632,7 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
           </Box>
 
           <Box sx={{ mt: 1 }}>
-            <Typography variant="body2" gutterBottom>
+            <Typography variant="body2" gutterBottom id="camera-height-label">
               Camera Height
             </Typography>
             <Slider
@@ -1573,10 +1643,11 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
               step={1}
               valueLabelDisplay="auto"
               sx={{ color: 'white' }}
+              aria-labelledby="camera-height-label"
             />
           </Box>
           <Box sx={{ mt: 1 }}>
-            <Typography variant="body2" gutterBottom>
+            <Typography variant="body2" gutterBottom id="camera-distance-label">
               Camera Distance
             </Typography>
             <Slider
@@ -1587,6 +1658,7 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
               step={1}
               valueLabelDisplay="auto"
               sx={{ color: 'white' }}
+              aria-labelledby="camera-distance-label"
             />
           </Box>
         </Box>

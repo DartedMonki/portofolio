@@ -14,9 +14,10 @@ import {
   useTheme,
 } from '@mui/material';
 import { styled } from '@mui/system';
+import { visuallyHidden } from '@mui/utils';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
-import { type FC, memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { type FC, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import TerrainBackground from '~/src/components/TerrainBackground';
 
@@ -153,10 +154,25 @@ const MainSection = styled('section')({
   overflow: 'hidden',
 });
 
+const SkipLink = styled('a')({
+  position: 'absolute',
+  top: -50,
+  left: 0,
+  zIndex: 1000,
+  padding: '8px 16px',
+  background: '#304FFE',
+  color: 'white',
+  textDecoration: 'none',
+  '&:focus': {
+    top: 0,
+  },
+});
+
 const Home: FC<HomeProps> = memo(({ ipAddress }) => {
   const [isTerrainLoaded, setIsTerrainLoaded] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const portfolioSectionRef = useRef<HTMLElement>(null);
 
   const { data, methods } = useHome({ ipAddress });
   const theme = useTheme();
@@ -204,6 +220,11 @@ const Home: FC<HomeProps> = memo(({ ipAddress }) => {
     };
   }, [isTerrainLoaded]);
 
+  const skipToContent = () => {
+    portfolioSectionRef.current?.focus();
+    portfolioSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <>
       {!isTerrainLoaded && (
@@ -217,8 +238,21 @@ const Home: FC<HomeProps> = memo(({ ipAddress }) => {
             width: '100%',
             zIndex: 9999,
           }}
+          aria-label="Loading terrain"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={loadingProgress}
         />
       )}
+      <SkipLink
+        href="#portfolio-section"
+        onClick={(e) => {
+          e.preventDefault();
+          skipToContent();
+        }}
+      >
+        Skip to main content
+      </SkipLink>
       <Dialog
         fullScreen={fullScreen}
         maxWidth="md"
@@ -298,6 +332,9 @@ const Home: FC<HomeProps> = memo(({ ipAddress }) => {
               },
             }}
             aria-label="Open terrain settings"
+            aria-expanded={settingsOpen}
+            aria-controls="terrain-settings-panel"
+            id="terrain-settings-button"
           >
             <SettingsIcon />
           </IconButton>
@@ -306,7 +343,15 @@ const Home: FC<HomeProps> = memo(({ ipAddress }) => {
             onLoad={() => setIsTerrainLoaded(true)}
             settingsOpen={settingsOpen}
             onSettingsOpenChange={setSettingsOpen}
+            aria-label="Interactive 3D terrain background"
+            aria-hidden={!isTerrainLoaded}
           />
+          <Box sx={{ ...visuallyHidden }}>
+            <Typography variant="body1">
+              This page features an interactive 3D wireframe terrain background created with
+              Three.js. The content below is the main portfolio information.
+            </Typography>
+          </Box>
           <Button
             onClick={methods.handleAboutDialog}
             sx={{
@@ -323,6 +368,8 @@ const Home: FC<HomeProps> = memo(({ ipAddress }) => {
               },
             }}
             aria-label="Open about me dialog"
+            aria-haspopup="dialog"
+            aria-expanded={data.openAboutDialog}
           >
             <Box
               sx={{
@@ -379,7 +426,9 @@ const Home: FC<HomeProps> = memo(({ ipAddress }) => {
           </Typography>
         </MainSection>
         <DynamicFabMenu />
-        <DynamicPortfolioSection />
+        <Box id="portfolio-section" ref={portfolioSectionRef} tabIndex={-1}>
+          <DynamicPortfolioSection />
+        </Box>
       </main>
     </>
   );
