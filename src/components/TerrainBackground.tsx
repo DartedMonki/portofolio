@@ -1295,7 +1295,10 @@ const TerrainBackground: React.FC<TerrainBackgroundProps> = ({
                 variant="contained"
                 fullWidth
                 onClick={() => {
-                  setNeedsRestart(true);
+                  // Force a restart by toggling needsRestart to false and back to true
+                  // This will trigger the useEffect to run again
+                  setNeedsRestart(false);
+                  setTimeout(() => setNeedsRestart(true), 0);
                 }}
                 sx={{
                   backgroundColor: 'rgba(255, 255, 0, 0.5)',
