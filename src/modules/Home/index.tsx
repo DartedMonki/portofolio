@@ -1,4 +1,5 @@
 import CloseIcon from '@mui/icons-material/Close';
+import SettingsIcon from '@mui/icons-material/Settings';
 import {
   Box,
   Button,
@@ -155,6 +156,7 @@ const MainSection = styled('section')({
 const Home: FC<HomeProps> = memo(({ ipAddress }) => {
   const [isTerrainLoaded, setIsTerrainLoaded] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const { data, methods } = useHome({ ipAddress });
   const theme = useTheme();
@@ -207,6 +209,7 @@ const Home: FC<HomeProps> = memo(({ ipAddress }) => {
       {!isTerrainLoaded && (
         <LinearProgress
           value={loadingProgress}
+          variant="determinate"
           sx={{
             position: 'fixed',
             top: 0,
@@ -259,7 +262,51 @@ const Home: FC<HomeProps> = memo(({ ipAddress }) => {
         </Box>
 
         <MainSection>
-          <TerrainBackground onLoad={() => setIsTerrainLoaded(true)} />
+          {/* Three.js Badge - top right */}
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 16,
+              right: 16,
+              zIndex: 10,
+              padding: '4px 8px',
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              borderRadius: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              pointerEvents: 'none',
+            }}
+          >
+            <Typography variant="body2" color="white" sx={{ fontWeight: 'medium' }}>
+              Built with Three.js
+            </Typography>
+          </Box>
+
+          {/* Settings Button - top left */}
+          <IconButton
+            onClick={() => setSettingsOpen(true)}
+            sx={{
+              position: 'absolute',
+              top: 16,
+              left: 16,
+              zIndex: 10,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              color: 'white',
+              '&:hover': {
+                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+              },
+            }}
+            aria-label="Open terrain settings"
+          >
+            <SettingsIcon />
+          </IconButton>
+
+          <TerrainBackground
+            onLoad={() => setIsTerrainLoaded(true)}
+            settingsOpen={settingsOpen}
+            onSettingsOpenChange={setSettingsOpen}
+          />
           <Button
             onClick={methods.handleAboutDialog}
             sx={{
@@ -267,6 +314,7 @@ const Home: FC<HomeProps> = memo(({ ipAddress }) => {
               borderRadius: '50%',
               overflow: 'hidden',
               position: 'relative',
+              zIndex: 5,
               ':hover': {
                 '& > div': {
                   bgcolor: 'rgba(0, 0, 0, 0.5)',
