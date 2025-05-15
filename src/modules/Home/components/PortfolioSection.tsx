@@ -52,9 +52,26 @@ export const PORTFOLIO_PROJECTS: Project[] = [
     },
   },
   {
+    title: 'Pura Pura Bike',
+    technologies: ['Next.js', 'Tailwind CSS'],
+    isDark: true,
+    images: [
+      { src: '/images/pura-pura-bike-1.png', alt: 'Pura Pura Bike Hero', priority: true },
+      { src: '/images/pura-pura-bike-2.png', alt: 'Pura Pura Bike Kegiatan Rutin' },
+      { src: '/images/pura-pura-bike-3.png', alt: 'Pura Pura Bike Kolaborator' },
+      { src: '/images/pura-pura-bike-4.png', alt: 'Pura Pura Bike Statistik Kami' },
+      { src: '/images/pura-pura-bike-5.png', alt: 'Pura Pura Bike Hubungi Kami' },
+    ],
+    link: {
+      href: 'https://pura-pura-bike.vercel.app/',
+      text: 'Website',
+      icon: Language,
+    },
+  },
+  {
     title: 'Intermedia Prima Vision',
     technologies: ['Javascript', 'HTML', 'Tailwind CSS'],
-    isDark: true,
+    isDark: false,
     images: [
       { src: '/images/ipvision.png', alt: 'Intermedia Prima Vision Home Page', priority: true },
     ],
@@ -67,7 +84,7 @@ export const PORTFOLIO_PROJECTS: Project[] = [
   {
     title: 'Heetung',
     technologies: ['Flutter', 'Dart'],
-    isDark: false,
+    isDark: true,
     images: [
       { src: '/images/heetung-1.png', alt: 'Heetung Main Screen', priority: true },
       { src: '/images/heetung-2.png', alt: 'Heetung Settings Screen' },
@@ -79,7 +96,7 @@ export const PORTFOLIO_PROJECTS: Project[] = [
   {
     title: 'Sembunyi Social',
     technologies: ['Flutter', 'Dart'],
-    isDark: true,
+    isDark: false,
     images: [
       { src: '/images/sembunyi-social-1.png', alt: 'Sembunyi Social Main Screen', priority: true },
       { src: '/images/sembunyi-social-2.png', alt: 'Sembunyi Social Direct Message Screen' },
@@ -90,7 +107,7 @@ export const PORTFOLIO_PROJECTS: Project[] = [
   {
     title: 'Castle Journey',
     technologies: ['Unity', 'C#'],
-    isDark: false,
+    isDark: true,
     images: [
       { src: '/images/main-menu.png', alt: 'Castle Journey Main Menu' },
       { src: '/images/world-1.png', alt: 'Castle Journey World 1' },
