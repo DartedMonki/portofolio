@@ -11,7 +11,7 @@
     "lint:fix": "next lint --fix && tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "optimize-images": "node --import 'data:text/javascript,import { register } from \"node:module\"; import { pathToFileURL } from \"node:url\"; register(\"ts-node/esm\", pathToFileURL(\"./\"));' scripts/optimize-images.mts",
+    "optimize-images": "node --import \"data:text/javascript,import { register } from 'node:module'; import { pathToFileURL } from 'node:url'; register('ts-node/esm', pathToFileURL('./'));\" scripts/optimize-images.mts",
     "build:with-images": "npm run optimize-images && next build"
   },
   "dependencies": {

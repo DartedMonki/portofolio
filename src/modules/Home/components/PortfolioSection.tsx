@@ -13,6 +13,8 @@ import OptimizedImage from '~/src/components/OptimizedImage';
 
 import styles from '../Home.module.css';
 
+const FIRST_PROJECT_IS_DARK = false;
+
 export interface ProjectImage {
   src: string;
   alt: string;
@@ -30,14 +32,22 @@ export interface Project {
   technologies: string[];
   images: ProjectImage[];
   link?: ProjectLink;
-  isDark?: boolean;
 }
 
-export const PORTFOLIO_PROJECTS: Project[] = [
+export interface ProjectWithDarkMode extends Project {
+  isDark: boolean;
+}
+
+const assignAlternatingDarkMode = (projects: Project[]): ProjectWithDarkMode[] =>
+  projects.map((project, index) => ({
+    ...project,
+    isDark: index % 2 === 0 ? FIRST_PROJECT_IS_DARK : !FIRST_PROJECT_IS_DARK,
+  }));
+
+const PORTFOLIO_PROJECTS_BASE: Project[] = [
   {
     title: 'Wingbox',
     technologies: ['Next.js', 'Fiber (Go)', 'PostgreSQL'],
-    isDark: false,
     images: [
       { src: '/images/wingbox-home.png', alt: 'Wingbox Home Page', priority: true },
       { src: '/images/wingbox-calculator.png', alt: 'Wingbox Calculator Interface' },
@@ -54,7 +64,6 @@ export const PORTFOLIO_PROJECTS: Project[] = [
   {
     title: 'Pura Pura Bike',
     technologies: ['Next.js', 'Tailwind CSS'],
-    isDark: true,
     images: [
       { src: '/images/pura-pura-bike-1.png', alt: 'Pura Pura Bike Hero', priority: true },
       { src: '/images/pura-pura-bike-2.png', alt: 'Pura Pura Bike Kegiatan Rutin' },
@@ -69,9 +78,55 @@ export const PORTFOLIO_PROJECTS: Project[] = [
     },
   },
   {
+    title: 'Pulse AI',
+    technologies: ['Next.js', 'Tailwind CSS', 'Prisma', 'PostgreSQL'],
+    images: [
+      { src: '/images/pulse-ai-1.png', alt: 'Pulse AI Hero', priority: true },
+      { src: '/images/pulse-ai-2.png', alt: 'Pulse AI Dashboard' },
+      { src: '/images/pulse-ai-3.png', alt: 'Pulse AI Create Campaign' },
+      { src: '/images/pulse-ai-4.png', alt: 'Pulse AI Ad Accounts' },
+      { src: '/images/pulse-ai-5.png', alt: 'Pulse AI Ad Account Details' },
+    ],
+    link: {
+      href: 'https://pulse.technovasolusi.id/',
+      text: 'Website',
+      icon: Language,
+    },
+  },
+  {
+    title: 'GEP Media',
+    technologies: ['Nextjs', 'Tailwind CSS', 'Prisma', 'PostgreSQL'],
+    images: [
+      { src: '/images/gepmedia-1.png', alt: 'GEP Hero', priority: true },
+      { src: '/images/gepmedia-2.png', alt: 'GEP Dashboard' },
+      { src: '/images/gepmedia-3.png', alt: 'GEP Ebook' },
+      { src: '/images/gepmedia-4.png', alt: 'GEP QR Attendance' },
+    ],
+    link: {
+      href: 'https://www.gepmedia.id/',
+      text: 'Website',
+      icon: Language,
+    },
+  },
+  {
+    title: 'RSMS Emotion Shareflow',
+    technologies: ['Django', 'PostgreSQL', 'jQuery', 'Bootstrap'],
+    images: [
+      { src: '/images/rsms-1.png', alt: 'RSMS Hero', priority: true },
+      { src: '/images/rsms-2.png', alt: 'RSMS Dashboard 1' },
+      { src: '/images/rsms-3.png', alt: 'RSMS Dashboard 2' },
+      { src: '/images/rsms-4.png', alt: 'RSMS Revenue Summary 1' },
+      { src: '/images/rsms-5.png', alt: 'RSMS Revenue Summary 2' },
+    ],
+    link: {
+      href: 'https://rsms.technovasolusi.id/',
+      text: 'Website',
+      icon: Language,
+    },
+  },
+  {
     title: 'Intermedia Prima Vision',
     technologies: ['Javascript', 'HTML', 'Tailwind CSS'],
-    isDark: false,
     images: [
       { src: '/images/ipvision.png', alt: 'Intermedia Prima Vision Home Page', priority: true },
     ],
@@ -84,7 +139,6 @@ export const PORTFOLIO_PROJECTS: Project[] = [
   {
     title: 'Heetung',
     technologies: ['Flutter', 'Dart'],
-    isDark: true,
     images: [
       { src: '/images/heetung-1.png', alt: 'Heetung Main Screen', priority: true },
       { src: '/images/heetung-2.png', alt: 'Heetung Settings Screen' },
@@ -96,7 +150,6 @@ export const PORTFOLIO_PROJECTS: Project[] = [
   {
     title: 'Sembunyi Social',
     technologies: ['Flutter', 'Dart'],
-    isDark: false,
     images: [
       { src: '/images/sembunyi-social-1.png', alt: 'Sembunyi Social Main Screen', priority: true },
       { src: '/images/sembunyi-social-2.png', alt: 'Sembunyi Social Direct Message Screen' },
@@ -107,7 +160,6 @@ export const PORTFOLIO_PROJECTS: Project[] = [
   {
     title: 'Castle Journey',
     technologies: ['Unity', 'C#'],
-    isDark: true,
     images: [
       { src: '/images/main-menu.png', alt: 'Castle Journey Main Menu' },
       { src: '/images/world-1.png', alt: 'Castle Journey World 1' },
@@ -122,13 +174,16 @@ export const PORTFOLIO_PROJECTS: Project[] = [
   },
 ];
 
+export const PORTFOLIO_PROJECTS: ProjectWithDarkMode[] =
+  assignAlternatingDarkMode(PORTFOLIO_PROJECTS_BASE);
+
 interface AspectRatioStyle {
   width: string;
   height: string;
 }
 
 interface ProjectCardProps {
-  project: Project;
+  project: ProjectWithDarkMode;
 }
 
 const getImageDimensions = (src: string): Promise<{ width: number; height: number }> =>
@@ -225,7 +280,7 @@ const ProjectLink = memo(
 ProjectLink.displayName = 'ProjectLink';
 
 const LoadingProjectCard = memo(
-  ({ project, isMobile }: { project: Project; isMobile: boolean }) => (
+  ({ project, isMobile }: { project: ProjectWithDarkMode; isMobile: boolean }) => (
     <Box
       component="section"
       sx={{
@@ -273,7 +328,7 @@ const ProjectSlides = memo(
     dimensions,
     isMobile,
   }: {
-    project: Project;
+    project: ProjectWithDarkMode;
     dimensions: AspectRatioStyle;
     isMobile: boolean;
   }) => {
